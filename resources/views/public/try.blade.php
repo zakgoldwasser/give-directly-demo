@@ -31,6 +31,23 @@
         </div>
     </dl>
 
+    @if ($canonicalCounts->isNotEmpty())
+        <dl class="mt-4 grid gap-4 rounded-xl border border-stone-200 bg-stone-50 p-5 text-sm sm:grid-cols-3">
+            <div>
+                <dt class="text-stone-500">Logical gifts</dt>
+                <dd class="mt-1 text-2xl font-semibold text-stone-900">{{ number_format((int) ($canonicalCounts['gift'] ?? 0)) }}</dd>
+            </div>
+            <div>
+                <dt class="text-stone-500">Payout components</dt>
+                <dd class="mt-1 text-2xl font-semibold text-stone-900">{{ number_format((int) ($canonicalCounts['payout_component'] ?? 0)) }}</dd>
+            </div>
+            <div>
+                <dt class="text-stone-500">CRM records</dt>
+                <dd class="mt-1 text-2xl font-semibold text-stone-900">{{ number_format((int) ($canonicalCounts['crm_record'] ?? 0)) }}</dd>
+            </div>
+        </dl>
+    @endif
+
     @if ($errors->any())
         <div class="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="alert">
             {{ $errors->first() }}
@@ -73,6 +90,9 @@
                         @endif
                         @if ($batch->validated_at)
                             <p class="mt-1 text-xs">{{ number_format($batch->valid_rows) }} valid · {{ number_format($batch->rejected_rows) }} rejected</p>
+                        @endif
+                        @if ($batch->materialized_at)
+                            <p class="mt-1 text-xs">{{ number_format($batch->materialized_rows) }} source rows materialized@if ($batch->duplicate_rows > 0) · {{ number_format($batch->duplicate_rows) }} duplicate occurrence@endif</p>
                         @endif
                         <a class="mt-3 inline-flex text-sm font-medium underline" href="{{ route('try.imports.show', $batch) }}">Review loaded rows</a>
                     </div>

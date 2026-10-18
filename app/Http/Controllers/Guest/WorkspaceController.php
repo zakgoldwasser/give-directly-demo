@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Guest;
 
 use App\Domain\Reconciliation\Services\ReferenceFixtureCatalog;
 use App\Http\Controllers\Controller;
+use App\Models\CanonicalRecord;
 use App\Models\GuestWorkspace;
 use App\Services\ReferenceScenarioService;
 use App\Services\WorkspaceService;
@@ -43,6 +44,14 @@ class WorkspaceController extends Controller
             'workspace' => $workspace,
             'intent' => $this->workspaces->intent(),
             'imports' => $workspace->importBatches()->with('mappingProfile')->get()->keyBy('report_type'),
+            'canonicalCounts' => $workspace->canonicalRecords()
+                ->whereIn('resolution_status', [
+                    CanonicalRecord::RESOLUTION_ACTIVE,
+                    CanonicalRecord::RESOLUTION_CONFLICTING,
+                ])
+                ->selectRaw('record_type, count(*) as aggregate')
+                ->groupBy('record_type')
+                ->pluck('aggregate', 'record_type'),
             'fixtureReports' => $this->fixtures->reports(),
             'maxCsvSizeMb' => round(((int) config('reconciliation.max_csv_size_bytes')) / 1024 / 1024, 1),
             'maxDataRows' => (int) config('reconciliation.max_data_rows'),

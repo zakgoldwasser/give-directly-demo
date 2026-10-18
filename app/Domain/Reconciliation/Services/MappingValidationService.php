@@ -16,6 +16,7 @@ class MappingValidationService
 {
     public function __construct(
         private readonly CanonicalReportSchema $schemas,
+        private readonly CanonicalRecordMaterializer $materializer,
     ) {}
 
     public function initialize(ImportBatch $batch): ImportBatch
@@ -178,6 +179,9 @@ class MappingValidationService
                 'validated_at' => $now,
             ])->save();
         });
+
+        $batch = $batch->refresh()->load('mappingProfile');
+        $this->materializer->rebuildWorkspace($batch->workspace()->firstOrFail());
 
         return $batch->refresh()->load('mappingProfile');
     }

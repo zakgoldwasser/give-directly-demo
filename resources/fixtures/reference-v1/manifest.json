@@ -41,7 +41,7 @@
         },
         "crm": {
             "filename": "crm.csv",
-            "sha256": "e468abe1398a1bd389b09556dbe59edc072b877d660f0198410d9a9f65006b68",
+            "sha256": "1041e977fd33324f890720afad6fd0d1ea76e13d6fc8f02edc8a77c3f01f4bee",
             "expected_rows": 8,
             "context": {
                 "report_type": "crm",

@@ -59,7 +59,16 @@
 
     @if ($batch->status === \App\Models\ImportBatch::STATUS_VALIDATED)
         <div class="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950" role="status">
-            Validation passed for all {{ number_format($batch->valid_rows) }} rows.
+            Validation passed for all {{ number_format($batch->valid_rows) }} rows. {{ number_format($batch->materialized_rows) }} source rows are linked to canonical records.
+            @if ($batch->duplicate_rows > 0)
+                {{ number_format($batch->duplicate_rows) }} identical source occurrence was retained without creating another record version.
+            @endif
+            @if ($batch->stale_rows > 0)
+                {{ number_format($batch->stale_rows) }} stale revision was retained without replacing newer evidence.
+            @endif
+            @if ($batch->conflicting_rows > 0)
+                {{ number_format($batch->conflicting_rows) }} source row participates in a blocking version conflict.
+            @endif
         </div>
     @elseif ($batch->status === \App\Models\ImportBatch::STATUS_VALIDATION_FAILED)
         <div class="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="alert">

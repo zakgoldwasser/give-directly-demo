@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ImportRow extends Model
 {
@@ -52,5 +53,13 @@ class ImportRow extends Model
     public function batch(): BelongsTo
     {
         return $this->belongsTo(ImportBatch::class, 'import_batch_id');
+    }
+
+    /**
+     * @return HasMany<SourceOccurrence, $this>
+     */
+    public function sourceOccurrences(): HasMany
+    {
+        return $this->hasMany(SourceOccurrence::class);
     }
 }

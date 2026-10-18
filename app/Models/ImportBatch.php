@@ -67,9 +67,14 @@ class ImportBatch extends Model
         'valid_rows',
         'review_rows',
         'rejected_rows',
+        'materialized_rows',
+        'duplicate_rows',
+        'stale_rows',
+        'conflicting_rows',
         'processing_error_code',
         'completed_at',
         'validated_at',
+        'materialized_at',
         'expires_at',
     ];
 
@@ -88,8 +93,13 @@ class ImportBatch extends Model
             'valid_rows' => 'integer',
             'review_rows' => 'integer',
             'rejected_rows' => 'integer',
+            'materialized_rows' => 'integer',
+            'duplicate_rows' => 'integer',
+            'stale_rows' => 'integer',
+            'conflicting_rows' => 'integer',
             'completed_at' => 'datetime',
             'validated_at' => 'datetime',
+            'materialized_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
     }
@@ -116,6 +126,14 @@ class ImportBatch extends Model
     public function mappingProfile(): BelongsTo
     {
         return $this->belongsTo(MappingProfile::class);
+    }
+
+    /**
+     * @return HasMany<SourceOccurrence, $this>
+     */
+    public function sourceOccurrences(): HasMany
+    {
+        return $this->hasMany(SourceOccurrence::class);
     }
 
     public function isTerminal(): bool

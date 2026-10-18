@@ -33,8 +33,13 @@ class ImportBatchFactory extends Factory
             'valid_rows' => 0,
             'review_rows' => 0,
             'rejected_rows' => 0,
+            'materialized_rows' => 0,
+            'duplicate_rows' => 0,
+            'stale_rows' => 0,
+            'conflicting_rows' => 0,
             'processing_error_code' => null,
             'completed_at' => null,
+            'materialized_at' => null,
             'expires_at' => now()->addHour(),
         ];
     }

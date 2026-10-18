@@ -6,6 +6,7 @@ use App\Domain\Reconciliation\Services\MappingValidationService;
 use App\Models\ImportBatch;
 use App\Models\ImportRow;
 use App\Models\MappingProfile;
+use App\Models\SourceOccurrence;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -84,6 +85,7 @@ class MappingValidationTest extends TestCase
         $this->assertContains('UNSUPPORTED_CURRENCY', $codes);
         $this->assertContains('UNKNOWN_STATUS', $codes);
         $this->assertContains('INVALID_BOOLEAN', $codes);
+        $this->assertDatabaseCount('canonical_records', 0);
     }
 
     public function test_extra_columns_are_retained_as_unmapped_evidence_without_blocking_valid_rows(): void
@@ -138,6 +140,10 @@ class MappingValidationTest extends TestCase
         $this->assertSame(2, $batch->mappingProfile->version);
         $this->assertDatabaseCount('mapping_profiles', 2);
         $this->assertSame($originalRaw, ImportRow::query()->firstOrFail()->raw_data);
+        $this->assertDatabaseCount('canonical_records', 1);
+        $this->assertDatabaseCount('canonical_record_versions', 1);
+        $this->assertDatabaseCount('source_occurrences', 2);
+        $this->assertCount(2, SourceOccurrence::query()->distinct()->pluck('mapping_profile_id'));
 
         $this->upload('donations', str_replace('D900', 'D901', $contents));
         $reusedBatch = ImportBatch::query()->whereKeyNot($batch->id)->firstOrFail();

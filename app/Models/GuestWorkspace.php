@@ -77,4 +77,12 @@ class GuestWorkspace extends Model
     {
         return $this->hasMany(MappingProfile::class);
     }
+
+    /**
+     * @return HasMany<CanonicalRecord, $this>
+     */
+    public function canonicalRecords(): HasMany
+    {
+        return $this->hasMany(CanonicalRecord::class);
+    }
 }
