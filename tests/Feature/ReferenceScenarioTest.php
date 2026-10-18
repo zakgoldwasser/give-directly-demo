@@ -68,13 +68,18 @@ class ReferenceScenarioTest extends TestCase
         $this->assertDatabaseCount('import_rows', 37);
 
         foreach ($batches as $type => $batch) {
-            $this->assertSame(ImportBatch::STATUS_MAPPING_REQUIRED, $batch->status);
+            $this->assertSame(ImportBatch::STATUS_VALIDATED, $batch->status);
+            $this->assertSame($batch->total_rows, $batch->valid_rows);
+            $this->assertSame(0, $batch->rejected_rows);
             $this->assertSame($type, $batch->context['report_type']);
             $this->assertSame('reference_v1', $batch->context['scenario_id']);
             $this->assertSame('demo_caf', $batch->context['provider_id']);
             $this->assertSame('GBP', $batch->context['currency']);
             Storage::disk('imports')->assertExists($batch->private_file_path);
+            $this->assertNotNull($batch->mapping_profile_id);
         }
+
+        $this->assertDatabaseCount('mapping_profiles', 3);
 
         $donationRows = ImportRow::query()
             ->where('import_batch_id', $batches['donations']->id)
@@ -84,6 +89,8 @@ class ReferenceScenarioTest extends TestCase
 
         $this->assertSame($donationRows[0]->raw_data, $donationRows[1]->raw_data);
         $this->assertSame('D001', $donationRows[0]->raw_data['transaction_id']);
+        $this->assertSame(10000, $donationRows[0]->normalized_data['gross_amount_minor']);
+        $this->assertSame(0, $donationRows[0]->normalized_data['refunded_amount_minor']);
 
         $this->get(route('try.show'))
             ->assertOk()

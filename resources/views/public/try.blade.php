@@ -50,6 +50,11 @@
             @php
                 $batch = $imports->get($type);
                 $fixture = $fixtureReports[$type];
+                $statusClasses = match ($batch?->status) {
+                    \App\Models\ImportBatch::STATUS_VALIDATED => 'border-emerald-200 bg-emerald-50 text-emerald-900',
+                    \App\Models\ImportBatch::STATUS_VALIDATION_FAILED => 'border-red-200 bg-red-50 text-red-900',
+                    default => 'border-amber-200 bg-amber-50 text-amber-950',
+                };
             @endphp
             <article class="rounded-xl border border-stone-200 bg-white p-6">
                 <h2 class="text-lg font-semibold text-stone-900">{{ $label }}</h2>
@@ -60,10 +65,16 @@
                 </a>
 
                 @if ($batch)
-                    <div class="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                        <p class="text-sm font-medium text-emerald-900">Loaded {{ number_format($batch->total_rows) }} rows</p>
-                        <p class="mt-1 text-xs text-emerald-800">{{ $batch->original_filename }} · {{ str_replace('_', ' ', $batch->status) }}</p>
-                        <a class="mt-3 inline-flex text-sm font-medium text-emerald-800 underline" href="{{ route('try.imports.show', $batch) }}">Review loaded rows</a>
+                    <div class="mt-5 rounded-lg border p-4 {{ $statusClasses }}">
+                        <p class="text-sm font-medium">Loaded {{ number_format($batch->total_rows) }} rows</p>
+                        <p class="mt-1 text-xs">{{ $batch->original_filename }} · {{ str_replace('_', ' ', $batch->status) }}</p>
+                        @if ($batch->mappingProfile)
+                            <p class="mt-1 text-xs">{{ $batch->mappingProfile->adapter_profile }} · mapping v{{ $batch->mappingProfile->version }}</p>
+                        @endif
+                        @if ($batch->validated_at)
+                            <p class="mt-1 text-xs">{{ number_format($batch->valid_rows) }} valid · {{ number_format($batch->rejected_rows) }} rejected</p>
+                        @endif
+                        <a class="mt-3 inline-flex text-sm font-medium underline" href="{{ route('try.imports.show', $batch) }}">Review loaded rows</a>
                     </div>
                 @else
                     <form class="mt-5" method="POST" enctype="multipart/form-data" action="{{ route('try.imports.store') }}" data-upload-form data-upload-url="{{ route('try.imports.store') }}" data-max-bytes="{{ (int) config('reconciliation.max_csv_size_bytes') }}">

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Domain\Reconciliation\Exceptions\CsvParseException;
 use App\Domain\Reconciliation\Services\CsvParserService;
+use App\Domain\Reconciliation\Services\MappingValidationService;
 use App\Domain\Reconciliation\Services\ReferenceFixtureCatalog;
 use App\Models\GuestWorkspace;
 use App\Models\ImportBatch;
@@ -22,6 +23,7 @@ class ImportService
     public function __construct(
         private readonly CsvParserService $parser,
         private readonly ReferenceFixtureCatalog $fixtures,
+        private readonly MappingValidationService $mappings,
     ) {}
 
     /**
@@ -117,6 +119,8 @@ class ImportService
                     'completed_at' => $now,
                 ])->save();
             });
+
+            $this->mappings->initialize($batch->refresh());
         } catch (CsvParseException $exception) {
             $this->failBatch($batch, $exception->errorCode);
             Log::warning('Import parse failed', [

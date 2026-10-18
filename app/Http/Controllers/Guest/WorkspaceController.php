@@ -42,7 +42,7 @@ class WorkspaceController extends Controller
         return view('public.try', [
             'workspace' => $workspace,
             'intent' => $this->workspaces->intent(),
-            'imports' => $workspace->importBatches()->get()->keyBy('report_type'),
+            'imports' => $workspace->importBatches()->with('mappingProfile')->get()->keyBy('report_type'),
             'fixtureReports' => $this->fixtures->reports(),
             'maxCsvSizeMb' => round(((int) config('reconciliation.max_csv_size_bytes')) / 1024 / 1024, 1),
             'maxDataRows' => (int) config('reconciliation.max_data_rows'),

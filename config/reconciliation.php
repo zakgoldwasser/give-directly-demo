@@ -15,6 +15,8 @@ return [
 
     'max_processing_seconds' => (int) env('RECONCILIATION_MAX_PROCESSING_SECONDS', 20),
 
+    'max_absolute_money_minor_units' => (int) env('RECONCILIATION_MAX_ABSOLUTE_MONEY_MINOR_UNITS', 10_000_000_000),
+
     'allow_arbitrary_uploads' => (bool) env('RECONCILIATION_ALLOW_ARBITRARY_UPLOADS', false),
 
     'reference_fixture_manifest' => resource_path('fixtures/reference-v1/manifest.json'),

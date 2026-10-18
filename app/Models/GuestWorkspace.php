@@ -69,4 +69,12 @@ class GuestWorkspace extends Model
     {
         return $this->hasMany(ImportBatch::class);
     }
+
+    /**
+     * @return HasMany<MappingProfile, $this>
+     */
+    public function mappingProfiles(): HasMany
+    {
+        return $this->hasMany(MappingProfile::class);
+    }
 }

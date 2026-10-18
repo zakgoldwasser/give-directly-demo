@@ -17,6 +17,10 @@ class ImportRow extends Model
 
     public const STATUS_STAGED = 'staged';
 
+    public const STATUS_VALID = 'valid';
+
+    public const STATUS_INVALID = 'invalid';
+
     /**
      * @var list<string>
      */
@@ -24,6 +28,7 @@ class ImportRow extends Model
         'import_batch_id',
         'row_number',
         'raw_data',
+        'normalized_data',
         'status',
         'validation_issues',
     ];
@@ -35,6 +40,7 @@ class ImportRow extends Model
     {
         return [
             'raw_data' => 'array',
+            'normalized_data' => 'array',
             'validation_issues' => 'array',
             'row_number' => 'integer',
         ];

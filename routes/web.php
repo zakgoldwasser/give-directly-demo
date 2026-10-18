@@ -3,6 +3,7 @@
 use App\Http\Controllers\Guest\FixtureController;
 use App\Http\Controllers\Guest\ImportController;
 use App\Http\Controllers\Guest\LandingController;
+use App\Http\Controllers\Guest\MappingController;
 use App\Http\Controllers\Guest\PageController;
 use App\Http\Controllers\Guest\WorkspaceController;
 use App\Http\Middleware\EnsureGuestWorkspace;
@@ -22,4 +23,5 @@ Route::middleware(EnsureGuestWorkspace::class)->group(function () {
 
     Route::post('/try/imports', [ImportController::class, 'store'])->name('try.imports.store');
     Route::get('/try/imports/{import}', [ImportController::class, 'show'])->name('try.imports.show');
+    Route::post('/try/imports/{import}/mapping', MappingController::class)->name('try.imports.mapping.store');
 });

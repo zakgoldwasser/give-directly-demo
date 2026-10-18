@@ -1,7 +1,7 @@
 {
     "scenario_id": "reference_v1",
     "manifest_version": 1,
-    "profile_version": "reference-v1",
+    "profile_version": "demo_caf_v1",
     "organization_id": "demo_org",
     "provider_id": "demo_caf",
     "account_id": "demo_account",
@@ -19,7 +19,7 @@
                 "timezone": "Europe/London",
                 "coverage_filters": {"statuses": ["paid", "pending", "partially_refunded", "refunded"]},
                 "complete_snapshot": true,
-                "profile_version": "reference-v1",
+                "profile_version": "demo_caf_v1",
                 "schema_version": 1
             }
         },
@@ -35,7 +35,7 @@
                 "timezone": "Europe/London",
                 "coverage_filters": {"payout_statuses": ["sent", "pending"]},
                 "complete_snapshot": true,
-                "profile_version": "reference-v1",
+                "profile_version": "demo_caf_v1",
                 "schema_version": 1
             }
         },
@@ -51,7 +51,7 @@
                 "timezone": "Europe/London",
                 "coverage_filters": {"gift_statuses": ["paid"]},
                 "complete_snapshot": true,
-                "profile_version": "reference-v1",
+                "profile_version": "demo_caf_v1",
                 "schema_version": 1
             }
         }

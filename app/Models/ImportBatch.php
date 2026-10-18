@@ -20,6 +20,10 @@ class ImportBatch extends Model
 
     public const STATUS_MAPPING_REQUIRED = 'mapping_required';
 
+    public const STATUS_VALIDATED = 'validated';
+
+    public const STATUS_VALIDATION_FAILED = 'validation_failed';
+
     public const STATUS_PROCESSING = 'processing';
 
     public const STATUS_COMPLETED = 'completed';
@@ -37,6 +41,8 @@ class ImportBatch extends Model
         self::STATUS_UPLOADED,
         self::STATUS_PROCESSING,
         self::STATUS_MAPPING_REQUIRED,
+        self::STATUS_VALIDATED,
+        self::STATUS_VALIDATION_FAILED,
         self::STATUS_COMPLETED,
     ];
 
@@ -51,6 +57,10 @@ class ImportBatch extends Model
         'sha256_checksum',
         'parsing_config',
         'context',
+        'mapping_profile_id',
+        'schema_fingerprint',
+        'schema_issues',
+        'unmapped_headers',
         'status',
         'total_rows',
         'processed_rows',
@@ -59,6 +69,7 @@ class ImportBatch extends Model
         'rejected_rows',
         'processing_error_code',
         'completed_at',
+        'validated_at',
         'expires_at',
     ];
 
@@ -70,12 +81,15 @@ class ImportBatch extends Model
         return [
             'parsing_config' => 'array',
             'context' => 'array',
+            'schema_issues' => 'array',
+            'unmapped_headers' => 'array',
             'total_rows' => 'integer',
             'processed_rows' => 'integer',
             'valid_rows' => 'integer',
             'review_rows' => 'integer',
             'rejected_rows' => 'integer',
             'completed_at' => 'datetime',
+            'validated_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
     }
@@ -96,10 +110,20 @@ class ImportBatch extends Model
         return $this->hasMany(ImportRow::class);
     }
 
+    /**
+     * @return BelongsTo<MappingProfile, $this>
+     */
+    public function mappingProfile(): BelongsTo
+    {
+        return $this->belongsTo(MappingProfile::class);
+    }
+
     public function isTerminal(): bool
     {
         return in_array($this->status, [
             self::STATUS_MAPPING_REQUIRED,
+            self::STATUS_VALIDATED,
+            self::STATUS_VALIDATION_FAILED,
             self::STATUS_COMPLETED,
             self::STATUS_FAILED,
             self::STATUS_EXPIRED,

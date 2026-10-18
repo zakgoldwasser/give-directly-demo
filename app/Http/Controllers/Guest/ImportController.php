@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Guest;
 
+use App\Domain\Reconciliation\Services\CanonicalReportSchema;
 use App\Http\Controllers\Controller;
 use App\Models\GuestWorkspace;
 use App\Models\ImportBatch;
@@ -17,6 +18,7 @@ class ImportController extends Controller
 {
     public function __construct(
         private readonly ImportService $imports,
+        private readonly CanonicalReportSchema $schemas,
     ) {}
 
     public function store(Request $request): RedirectResponse|JsonResponse
@@ -73,8 +75,22 @@ class ImportController extends Controller
 
         $previewRows = [];
         $headers = $batch->parsing_config['headers'] ?? [];
+        $schemaFields = $this->schemas->fields($batch->report_type);
+        $currentMapping = $batch->mappingProfile?->mapping ?? [];
 
-        if ($batch->status === ImportBatch::STATUS_MAPPING_REQUIRED) {
+        if ($currentMapping === []) {
+            foreach (array_keys($schemaFields) as $canonicalField) {
+                if (in_array($canonicalField, $headers, true)) {
+                    $currentMapping[$canonicalField] = $canonicalField;
+                }
+            }
+        }
+
+        if (in_array($batch->status, [
+            ImportBatch::STATUS_MAPPING_REQUIRED,
+            ImportBatch::STATUS_VALIDATED,
+            ImportBatch::STATUS_VALIDATION_FAILED,
+        ], true)) {
             $previewRows = $batch->rows()
                 ->orderBy('row_number')
                 ->limit(20)
@@ -85,7 +101,10 @@ class ImportController extends Controller
             'batch' => $batch,
             'previewRows' => $previewRows,
             'headers' => $headers,
+            'schemaFields' => $schemaFields,
+            'currentMapping' => $currentMapping,
             'duplicateWarning' => $request->session()->pull('import_duplicate_warning'),
+            'mappingSaved' => $request->session()->pull('mapping_saved'),
             'minutesRemaining' => $request->attributes->get('guest_workspace')->minutesRemaining(),
         ]);
     }
@@ -99,7 +118,7 @@ class ImportController extends Controller
 
         abort_if($batch === null, 404);
 
-        return $batch;
+        return $batch->load('mappingProfile');
     }
 
     private function duplicateResponse(Request $request, DuplicateImportException $exception): RedirectResponse|JsonResponse

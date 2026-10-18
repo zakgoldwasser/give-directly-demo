@@ -148,6 +148,25 @@ class CsvParserServiceTest extends TestCase
         $this->parser->parse($path);
     }
 
+    #[Test]
+    public function it_rejects_rows_with_a_different_column_count_than_the_header(): void
+    {
+        foreach ([
+            "A,B,C\n1,2\n",
+            "A,B\n1,2,3\n",
+        ] as $index => $contents) {
+            $path = $this->write("uneven-{$index}.csv", $contents);
+
+            try {
+                $this->parser->parse($path);
+                $this->fail('Expected CsvParseException');
+            } catch (CsvParseException $exception) {
+                $this->assertSame('INCONSISTENT_COLUMN_COUNT', $exception->errorCode);
+                $this->assertStringContainsString('Source row 1', $exception->getMessage());
+            }
+        }
+    }
+
     private function write(string $name, string $contents): string
     {
         $path = $this->tempDir.'/'.$name;

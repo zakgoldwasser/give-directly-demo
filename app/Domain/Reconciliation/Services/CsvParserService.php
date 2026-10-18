@@ -119,6 +119,13 @@ class CsvParserService
                     throw new CsvParseException('TOO_MANY_COLUMNS', "CSVs may include at most {$maxColumns} columns.");
                 }
 
+                if (count($cells) !== count($headers)) {
+                    throw new CsvParseException(
+                        'INCONSISTENT_COLUMN_COUNT',
+                        "Source row {$rowNumber} has ".count($cells).' columns; the header defines '.count($headers).'.'
+                    );
+                }
+
                 if ($this->hasMalformedQuoting($cells)) {
                     throw new CsvParseException('MALFORMED_CSV', 'The CSV contains malformed quoting.');
                 }
