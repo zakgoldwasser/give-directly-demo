@@ -1,0 +1,19 @@
+{
+  "fields": {
+    "donation_date": "Gift Date",
+    "amount": "Gift Value",
+    "currency": "Currency Code",
+    "external_donation_id": "Transaction Number",
+    "donor_name": "Supporter",
+    "donor_email": "Contact Email",
+    "campaign": "Fund",
+    "donation_frequency": "Frequency",
+    "payment_method": "Payment Method"
+  },
+  "options": {
+    "default_currency": "USD",
+    "date_format": "auto",
+    "decimal_separator": ".",
+    "source_timezone": "UTC"
+  }
+}

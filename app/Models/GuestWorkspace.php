@@ -2,12 +2,18 @@
 
 namespace App\Models;
 
+use Database\Factories\GuestWorkspaceFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 class GuestWorkspace extends Model
 {
+    /** @use HasFactory<GuestWorkspaceFactory> */
+    use HasFactory;
+
     use HasUuids;
 
     public const STATE_ACTIVE = 'active';
@@ -54,5 +60,13 @@ class GuestWorkspace extends Model
         $seconds = $this->expires_at->getTimestamp() - now()->getTimestamp();
 
         return max(0, (int) ceil($seconds / 60));
+    }
+
+    /**
+     * @return HasMany<ImportBatch, $this>
+     */
+    public function importBatches(): HasMany
+    {
+        return $this->hasMany(ImportBatch::class);
     }
 }

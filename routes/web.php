@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Guest\ImportController;
 use App\Http\Controllers\Guest\LandingController;
 use App\Http\Controllers\Guest\PageController;
 use App\Http\Controllers\Guest\WorkspaceController;
@@ -16,4 +17,9 @@ Route::post('/try/start', [WorkspaceController::class, 'start'])->name('try.star
 Route::middleware(EnsureGuestWorkspace::class)->group(function () {
     Route::get('/try', [WorkspaceController::class, 'show'])->name('try.show');
     Route::post('/try/reset', [WorkspaceController::class, 'reset'])->name('try.reset');
+
+    Route::post('/try/sample', [ImportController::class, 'sample'])->name('try.sample');
+    Route::post('/try/imports', [ImportController::class, 'store'])->name('try.imports.store');
+    Route::get('/try/imports/{import}', [ImportController::class, 'show'])->name('try.imports.show');
+    Route::get('/try/imports/{import}/status', [ImportController::class, 'status'])->name('try.imports.status');
 });

@@ -1,0 +1,190 @@
+<?php
+
+namespace App\Http\Controllers\Guest;
+
+use App\Http\Controllers\Controller;
+use App\Models\GuestWorkspace;
+use App\Models\ImportBatch;
+use App\Services\ImportExceptions\DuplicateImportException;
+use App\Services\ImportExceptions\ImportLimitException;
+use App\Services\ImportService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+
+class ImportController extends Controller
+{
+    public function __construct(
+        private readonly ImportService $imports,
+    ) {}
+
+    public function sample(Request $request): RedirectResponse|JsonResponse
+    {
+        /** @var GuestWorkspace $workspace */
+        $workspace = $request->attributes->get('guest_workspace');
+
+        try {
+            $batch = $this->imports->createFromSample($workspace);
+        } catch (DuplicateImportException $exception) {
+            return $this->duplicateResponse($request, $exception);
+        } catch (ImportLimitException $exception) {
+            return $this->limitResponse($request, $exception);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => [
+                    'id' => $batch->id,
+                    'status' => $batch->status,
+                    'redirect' => route('try.imports.show', $batch),
+                ],
+            ], 201);
+        }
+
+        return redirect()->route('try.imports.show', $batch);
+    }
+
+    public function store(Request $request): RedirectResponse|JsonResponse
+    {
+        /** @var GuestWorkspace $workspace */
+        $workspace = $request->attributes->get('guest_workspace');
+
+        $maxBytes = (int) config('givingledger.max_csv_size_bytes');
+
+        if ($request->hasFile('file') && $request->file('file')?->getSize() > $maxBytes) {
+            return $this->errorResponse(
+                $request,
+                'FILE_TOO_LARGE',
+                'The CSV exceeds the maximum allowed size.',
+                413,
+            );
+        }
+
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'max:'.(int) ceil($maxBytes / 1024)],
+        ]);
+
+        try {
+            $batch = $this->imports->createFromUpload($workspace, $validated['file']);
+        } catch (DuplicateImportException $exception) {
+            return $this->duplicateResponse($request, $exception);
+        } catch (ImportLimitException $exception) {
+            $status = $exception->errorCode === 'FILE_TOO_LARGE' ? 413 : 422;
+
+            return $this->limitResponse($request, $exception, $status);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => [
+                    'id' => $batch->id,
+                    'status' => $batch->status,
+                    'redirect' => route('try.imports.show', $batch),
+                ],
+            ], 201);
+        }
+
+        return redirect()->route('try.imports.show', $batch);
+    }
+
+    public function show(Request $request, string $import): View
+    {
+        $batch = $this->resolveBatch($request, $import);
+
+        $previewRows = [];
+        $headers = $batch->parsing_config['headers'] ?? [];
+
+        if ($batch->status === ImportBatch::STATUS_MAPPING_REQUIRED) {
+            $previewRows = $batch->rows()
+                ->orderBy('row_number')
+                ->limit(10)
+                ->get();
+        }
+
+        return view('public.import', [
+            'batch' => $batch,
+            'previewRows' => $previewRows,
+            'headers' => $headers,
+            'duplicateWarning' => $request->session()->pull('import_duplicate_warning'),
+            'minutesRemaining' => $request->attributes->get('guest_workspace')->minutesRemaining(),
+        ]);
+    }
+
+    public function status(Request $request, string $import): JsonResponse
+    {
+        $batch = $this->resolveBatch($request, $import);
+
+        return response()->json([
+            'data' => [
+                'status' => $batch->status,
+                'processed_rows' => $batch->processed_rows,
+                'total_rows' => $batch->total_rows,
+                'processing_error_code' => $batch->processing_error_code,
+            ],
+        ]);
+    }
+
+    private function resolveBatch(Request $request, string $import): ImportBatch
+    {
+        /** @var GuestWorkspace $workspace */
+        $workspace = $request->attributes->get('guest_workspace');
+
+        $batch = $this->imports->findForWorkspace($workspace, $import);
+
+        abort_if($batch === null, 404);
+
+        return $batch;
+    }
+
+    private function duplicateResponse(Request $request, DuplicateImportException $exception): RedirectResponse|JsonResponse
+    {
+        $batch = $exception->existingBatch;
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'error' => [
+                    'code' => 'DUPLICATE_FILE',
+                    'message' => $exception->getMessage(),
+                ],
+                'data' => [
+                    'id' => $batch->id,
+                    'status' => $batch->status,
+                    'redirect' => route('try.imports.show', $batch),
+                ],
+            ], 409);
+        }
+
+        return redirect()
+            ->route('try.imports.show', $batch)
+            ->with('import_duplicate_warning', $exception->getMessage());
+    }
+
+    private function limitResponse(
+        Request $request,
+        ImportLimitException $exception,
+        int $status = 422,
+    ): RedirectResponse|JsonResponse {
+        return $this->errorResponse($request, $exception->errorCode, $exception->getMessage(), $status);
+    }
+
+    private function errorResponse(
+        Request $request,
+        string $code,
+        string $message,
+        int $status,
+    ): RedirectResponse|JsonResponse {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'error' => [
+                    'code' => $code,
+                    'message' => $message,
+                ],
+            ], $status);
+        }
+
+        return redirect()
+            ->route('try.show')
+            ->withErrors(['file' => $message]);
+    }
+}

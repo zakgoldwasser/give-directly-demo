@@ -2,7 +2,7 @@
 
 Turn messy donation spreadsheets into clean, trustworthy, CRM-ready data.
 
-Phase 1 Milestone 1 provides the public landing experience and isolated temporary guest workspaces. CSV upload, parsing, mapping, validation, and export come in later milestones.
+Phase 1 Milestone 2 provides the public landing experience, isolated temporary guest workspaces, built-in sample data, CSV upload, and parsing into temporary staging rows. Column mapping, validation, duplicate review, and export come in later milestones.
 
 ## Requirements
 
