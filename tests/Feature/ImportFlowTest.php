@@ -46,7 +46,6 @@ class ImportFlowTest extends TestCase
     {
         config([
             'reconciliation.allow_arbitrary_uploads' => false,
-            'reconciliation.approved_fixture_checksums' => [],
         ]);
         $this->startWorkspace();
 
@@ -145,7 +144,7 @@ class ImportFlowTest extends TestCase
 
     private function startWorkspace(): void
     {
-        $this->post(route('try.start'), ['intent' => 'guided'])->assertRedirect(route('try.show'));
+        $this->post(route('try.start'), ['intent' => 'scenarios'])->assertRedirect(route('try.show'));
         $this->assertNotEmpty(session(WorkspaceService::SESSION_SECRET_KEY));
     }
 

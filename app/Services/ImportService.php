@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Domain\Reconciliation\Exceptions\CsvParseException;
 use App\Domain\Reconciliation\Services\CsvParserService;
+use App\Domain\Reconciliation\Services\ReferenceFixtureCatalog;
 use App\Models\GuestWorkspace;
 use App\Models\ImportBatch;
 use App\Models\ImportRow;
@@ -20,6 +21,7 @@ class ImportService
 {
     public function __construct(
         private readonly CsvParserService $parser,
+        private readonly ReferenceFixtureCatalog $fixtures,
     ) {}
 
     /**
@@ -33,62 +35,36 @@ class ImportService
         UploadedFile $file,
         string $reportType,
     ): ImportBatch {
-        $this->assertUnderActiveCap($workspace);
-
-        $maxBytes = (int) config('reconciliation.max_csv_size_bytes');
-
-        if ($file->getSize() !== false && $file->getSize() > $maxBytes) {
-            throw new ImportLimitException('FILE_TOO_LARGE', 'The CSV exceeds the maximum allowed size.');
-        }
-
         $realPath = $file->getRealPath();
 
         if ($realPath === false || ! is_readable($realPath)) {
             throw new ImportLimitException('FILE_UNREADABLE', 'The uploaded file could not be read.');
         }
 
-        $checksum = hash_file('sha256', $realPath);
-
-        if ($checksum === false) {
-            throw new ImportLimitException('FILE_UNREADABLE', 'The uploaded file could not be read.');
-        }
-
-        $this->assertUploadIsAllowed($checksum);
-
-        $existing = $this->findByChecksumAndType($workspace, $checksum, $reportType);
-
-        if ($existing !== null) {
-            throw new DuplicateImportException($existing);
-        }
-
         $originalName = $file->getClientOriginalName() !== ''
             ? $file->getClientOriginalName()
             : $reportType.'.csv';
-        $relativePath = $workspace->id.'/'.Str::uuid()->toString().'.csv';
 
-        Storage::disk('imports')->put($relativePath, fopen($realPath, 'rb'));
+        return $this->createFromPath($workspace, $realPath, $reportType, $originalName, true);
+    }
 
-        $batch = ImportBatch::query()->create([
-            'guest_workspace_id' => $workspace->id,
-            'report_type' => $reportType,
-            'original_filename' => $originalName,
-            'private_file_path' => $relativePath,
-            'sha256_checksum' => $checksum,
-            'parsing_config' => null,
-            'status' => ImportBatch::STATUS_UPLOADED,
-            'total_rows' => 0,
-            'processed_rows' => 0,
-            'valid_rows' => 0,
-            'review_rows' => 0,
-            'rejected_rows' => 0,
-            'processing_error_code' => null,
-            'completed_at' => null,
-            'expires_at' => $workspace->expires_at,
-        ]);
+    /**
+     * Load one versioned synthetic report from the server-side fixture catalog.
+     *
+     * @throws DuplicateImportException
+     * @throws ImportLimitException
+     */
+    public function createFromFixture(GuestWorkspace $workspace, string $reportType): ImportBatch
+    {
+        $report = $this->fixtures->report($reportType);
 
-        $this->process($batch);
-
-        return $batch->refresh();
+        return $this->createFromPath(
+            $workspace,
+            $this->fixtures->path($reportType),
+            $reportType,
+            (string) $report['filename'],
+            false,
+        );
     }
 
     public function findForWorkspace(GuestWorkspace $workspace, string $importId): ?ImportBatch
@@ -181,15 +157,13 @@ class ImportService
     /**
      * @throws ImportLimitException
      */
-    private function assertUploadIsAllowed(string $checksum): void
+    private function assertUploadIsAllowed(string $checksum, string $reportType): void
     {
         if ((bool) config('reconciliation.allow_arbitrary_uploads')) {
             return;
         }
 
-        $approved = config('reconciliation.approved_fixture_checksums', []);
-
-        if (is_array($approved) && in_array($checksum, $approved, true)) {
+        if ($this->fixtures->isApproved($reportType, $checksum)) {
             return;
         }
 
@@ -211,6 +185,87 @@ class ImportService
             ->whereIn('status', ImportBatch::ACTIVE_STATUSES)
             ->latest()
             ->first();
+    }
+
+    /**
+     * @throws DuplicateImportException
+     * @throws ImportLimitException
+     */
+    private function createFromPath(
+        GuestWorkspace $workspace,
+        string $sourcePath,
+        string $reportType,
+        string $originalName,
+        bool $enforceUploadPolicy,
+    ): ImportBatch {
+        $size = filesize($sourcePath);
+        $maxBytes = (int) config('reconciliation.max_csv_size_bytes');
+
+        if ($size === false) {
+            throw new ImportLimitException('FILE_UNREADABLE', 'The CSV could not be read.');
+        }
+
+        if ($size > $maxBytes) {
+            throw new ImportLimitException('FILE_TOO_LARGE', 'The CSV exceeds the maximum allowed size.');
+        }
+
+        $checksum = hash_file('sha256', $sourcePath);
+
+        if ($checksum === false) {
+            throw new ImportLimitException('FILE_UNREADABLE', 'The CSV could not be read.');
+        }
+
+        if ($enforceUploadPolicy) {
+            $this->assertUploadIsAllowed($checksum, $reportType);
+        }
+
+        $existing = $this->findByChecksumAndType($workspace, $checksum, $reportType);
+
+        if ($existing !== null) {
+            throw new DuplicateImportException($existing);
+        }
+
+        $this->assertUnderActiveCap($workspace);
+
+        $relativePath = $workspace->id.'/'.Str::uuid()->toString().'.csv';
+        $stream = fopen($sourcePath, 'rb');
+
+        if ($stream === false) {
+            throw new ImportLimitException('FILE_UNREADABLE', 'The CSV could not be read.');
+        }
+
+        try {
+            $stored = Storage::disk('imports')->put($relativePath, $stream);
+        } finally {
+            fclose($stream);
+        }
+
+        if (! $stored) {
+            throw new ImportLimitException('FILE_STORAGE_FAILED', 'The CSV could not be stored.');
+        }
+
+        $batch = ImportBatch::query()->create([
+            'guest_workspace_id' => $workspace->id,
+            'report_type' => $reportType,
+            'original_filename' => $originalName,
+            'private_file_path' => $relativePath,
+            'sha256_checksum' => $checksum,
+            'parsing_config' => null,
+            'context' => $this->fixtures->contextFor($reportType, $checksum),
+            'status' => ImportBatch::STATUS_UPLOADED,
+            'total_rows' => 0,
+            'processed_rows' => 0,
+            'valid_rows' => 0,
+            'review_rows' => 0,
+            'rejected_rows' => 0,
+            'processing_error_code' => null,
+            'completed_at' => null,
+            'expires_at' => $workspace->expires_at,
+        ]);
+
+        $this->process($batch);
+
+        return $batch->refresh();
     }
 
     private function failBatch(ImportBatch $batch, string $errorCode): void

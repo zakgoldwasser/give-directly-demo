@@ -1,0 +1,73 @@
+{
+    "scenario_id": "reference_v1",
+    "manifest_version": 1,
+    "profile_version": "reference-v1",
+    "organization_id": "demo_org",
+    "provider_id": "demo_caf",
+    "account_id": "demo_account",
+    "currency": "GBP",
+    "reports": {
+        "donations": {
+            "filename": "donations.csv",
+            "sha256": "46555de851be0bf05fec8bf284a3b76ddab8641384fc0d201f565789fbcf981e",
+            "expected_rows": 13,
+            "context": {
+                "report_type": "donations",
+                "generated_at": "2026-10-01T09:00:00+01:00",
+                "coverage_start": "2026-09-01T00:00:00+01:00",
+                "coverage_end": "2026-09-30T23:59:59+01:00",
+                "timezone": "Europe/London",
+                "coverage_filters": {"statuses": ["paid", "pending", "partially_refunded", "refunded"]},
+                "complete_snapshot": true,
+                "profile_version": "reference-v1",
+                "schema_version": 1
+            }
+        },
+        "payouts": {
+            "filename": "payouts.csv",
+            "sha256": "98ae91e9ea91e77444298fcb8b7278f12e507cc3501abc9d75c5484912369da4",
+            "expected_rows": 16,
+            "context": {
+                "report_type": "payouts",
+                "generated_at": "2026-10-01T10:00:00+01:00",
+                "coverage_start": "2026-09-01T00:00:00+01:00",
+                "coverage_end": "2026-09-30T23:59:59+01:00",
+                "timezone": "Europe/London",
+                "coverage_filters": {"payout_statuses": ["sent", "pending"]},
+                "complete_snapshot": true,
+                "profile_version": "reference-v1",
+                "schema_version": 1
+            }
+        },
+        "crm": {
+            "filename": "crm.csv",
+            "sha256": "e468abe1398a1bd389b09556dbe59edc072b877d660f0198410d9a9f65006b68",
+            "expected_rows": 8,
+            "context": {
+                "report_type": "crm",
+                "generated_at": "2026-10-02T12:00:00+01:00",
+                "coverage_start": "2026-09-01T00:00:00+01:00",
+                "coverage_end": "2026-09-30T23:59:59+01:00",
+                "timezone": "Europe/London",
+                "coverage_filters": {"gift_statuses": ["paid"]},
+                "complete_snapshot": true,
+                "profile_version": "reference-v1",
+                "schema_version": 1
+            }
+        }
+    },
+    "expected": {
+        "donation_rows": 13,
+        "logical_gifts": 12,
+        "payout_components": 16,
+        "crm_records": 8,
+        "gross_amount": "1130.00",
+        "returned_amount": "130.00",
+        "outcomes": {
+            "unchanged": 2,
+            "create": 2,
+            "update": 4,
+            "held": 4
+        }
+    }
+}

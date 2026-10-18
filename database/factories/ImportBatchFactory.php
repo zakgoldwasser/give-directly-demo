@@ -26,6 +26,7 @@ class ImportBatchFactory extends Factory
             'private_file_path' => Str::uuid()->toString().'/'.Str::uuid()->toString().'.csv',
             'sha256_checksum' => hash('sha256', fake()->unique()->uuid()),
             'parsing_config' => null,
+            'context' => null,
             'status' => ImportBatch::STATUS_UPLOADED,
             'total_rows' => 0,
             'processed_rows' => 0,

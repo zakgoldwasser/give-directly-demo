@@ -17,10 +17,7 @@ return [
 
     'allow_arbitrary_uploads' => (bool) env('RECONCILIATION_ALLOW_ARBITRARY_UPLOADS', false),
 
-    'approved_fixture_checksums' => array_values(array_filter(array_map(
-        'trim',
-        explode(',', (string) env('RECONCILIATION_APPROVED_FIXTURE_CHECKSUMS', '')),
-    ))),
+    'reference_fixture_manifest' => resource_path('fixtures/reference-v1/manifest.json'),
 
     'github_url' => filled(env('RECONCILIATION_GITHUB_URL'))
         ? env('RECONCILIATION_GITHUB_URL')

@@ -38,7 +38,7 @@
     @endif
 
     @php
-        $reports = [
+        $reportCards = [
             'donations' => ['Partner donations', 'Gift identity, amount, status, campaign, and revision evidence.'],
             'payouts' => ['Partner payouts', 'Settlement components, fees, refunds, reversals, and reported totals.'],
             'crm' => ['Existing CRM snapshot', 'Current destination records and declared snapshot coverage.'],
@@ -46,12 +46,26 @@
     @endphp
 
     <div class="mt-8 grid gap-6 lg:grid-cols-3">
-        @foreach ($reports as $type => [$label, $description])
+        @foreach ($reportCards as $type => [$label, $description])
+            @php
+                $batch = $imports->get($type);
+                $fixture = $fixtureReports[$type];
+            @endphp
             <article class="rounded-xl border border-stone-200 bg-white p-6">
                 <h2 class="text-lg font-semibold text-stone-900">{{ $label }}</h2>
                 <p class="mt-2 text-sm text-stone-600">{{ $description }}</p>
 
-                @if ($arbitraryUploadsAllowed)
+                <a class="mt-4 inline-flex text-sm font-medium text-emerald-700 hover:text-emerald-800" href="{{ route('reference-fixtures.download', $type) }}">
+                    Download sample · {{ number_format($fixture['expected_rows']) }} rows
+                </a>
+
+                @if ($batch)
+                    <div class="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                        <p class="text-sm font-medium text-emerald-900">Loaded {{ number_format($batch->total_rows) }} rows</p>
+                        <p class="mt-1 text-xs text-emerald-800">{{ $batch->original_filename }} · {{ str_replace('_', ' ', $batch->status) }}</p>
+                        <a class="mt-3 inline-flex text-sm font-medium text-emerald-800 underline" href="{{ route('try.imports.show', $batch) }}">Review loaded rows</a>
+                    </div>
+                @else
                     <form class="mt-5" method="POST" enctype="multipart/form-data" action="{{ route('try.imports.store') }}" data-upload-form data-upload-url="{{ route('try.imports.store') }}" data-max-bytes="{{ (int) config('reconciliation.max_csv_size_bytes') }}">
                         @csrf
                         <input type="hidden" name="report_type" value="{{ $type }}">
@@ -64,8 +78,9 @@
                         <p class="mt-3 hidden text-sm text-stone-600" data-upload-progress></p>
                         <button class="mt-4 w-full rounded-lg bg-emerald-700 px-4 py-2 font-medium text-white hover:bg-emerald-800" type="submit" data-upload-submit>Load report</button>
                     </form>
-                @else
-                    <p class="mt-5 rounded-lg bg-stone-100 p-4 text-sm text-stone-700">The public demo accepts only the supplied synthetic scenario files.</p>
+                    @unless ($arbitraryUploadsAllowed)
+                        <p class="mt-3 text-xs text-stone-500">Public demo uploads must match this report's supplied sample.</p>
+                    @endunless
                 @endif
             </article>
         @endforeach

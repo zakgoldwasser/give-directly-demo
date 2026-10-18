@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Guest;
 
+use App\Domain\Reconciliation\Services\ReferenceFixtureCatalog;
 use App\Http\Controllers\Controller;
 use App\Models\GuestWorkspace;
+use App\Services\ReferenceScenarioService;
 use App\Services\WorkspaceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,6 +15,8 @@ class WorkspaceController extends Controller
 {
     public function __construct(
         private readonly WorkspaceService $workspaces,
+        private readonly ReferenceScenarioService $referenceScenario,
+        private readonly ReferenceFixtureCatalog $fixtures,
     ) {}
 
     public function start(Request $request): RedirectResponse
@@ -21,7 +25,11 @@ class WorkspaceController extends Controller
             'intent' => ['required', 'in:guided,scenarios'],
         ]);
 
-        $this->workspaces->start($validated['intent']);
+        $workspace = $this->workspaces->start($validated['intent']);
+
+        if ($validated['intent'] === 'guided') {
+            $this->referenceScenario->load($workspace);
+        }
 
         return redirect()->route('try.show');
     }
@@ -34,6 +42,8 @@ class WorkspaceController extends Controller
         return view('public.try', [
             'workspace' => $workspace,
             'intent' => $this->workspaces->intent(),
+            'imports' => $workspace->importBatches()->get()->keyBy('report_type'),
+            'fixtureReports' => $this->fixtures->reports(),
             'maxCsvSizeMb' => round(((int) config('reconciliation.max_csv_size_bytes')) / 1024 / 1024, 1),
             'maxDataRows' => (int) config('reconciliation.max_data_rows'),
             'maxColumns' => (int) config('reconciliation.max_columns'),
@@ -47,7 +57,11 @@ class WorkspaceController extends Controller
 
     public function reset(): RedirectResponse
     {
-        $this->workspaces->reset();
+        $workspace = $this->workspaces->reset();
+
+        if ($this->workspaces->intent() === 'guided') {
+            $this->referenceScenario->load($workspace);
+        }
 
         return redirect()->route('try.show');
     }

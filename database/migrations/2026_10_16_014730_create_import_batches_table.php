@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('private_file_path');
             $table->string('sha256_checksum', 64);
             $table->jsonb('parsing_config')->nullable();
+            $table->jsonb('context')->nullable();
             $table->string('status');
             $table->unsignedInteger('total_rows')->default(0);
             $table->unsignedInteger('processed_rows')->default(0);

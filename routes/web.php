@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Guest\FixtureController;
 use App\Http\Controllers\Guest\ImportController;
 use App\Http\Controllers\Guest\LandingController;
 use App\Http\Controllers\Guest\PageController;
@@ -13,6 +14,7 @@ Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
 Route::get('/about', [PageController::class, 'about'])->name('about');
 
 Route::post('/try/start', [WorkspaceController::class, 'start'])->name('try.start');
+Route::get('/fixtures/reference/{reportType}', FixtureController::class)->name('reference-fixtures.download');
 
 Route::middleware(EnsureGuestWorkspace::class)->group(function () {
     Route::get('/try', [WorkspaceController::class, 'show'])->name('try.show');

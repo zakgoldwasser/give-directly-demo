@@ -50,6 +50,7 @@ class ImportBatch extends Model
         'private_file_path',
         'sha256_checksum',
         'parsing_config',
+        'context',
         'status',
         'total_rows',
         'processed_rows',
@@ -68,6 +69,7 @@ class ImportBatch extends Model
     {
         return [
             'parsing_config' => 'array',
+            'context' => 'array',
             'total_rows' => 'integer',
             'processed_rows' => 'integer',
             'valid_rows' => 'integer',
