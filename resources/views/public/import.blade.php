@@ -1,98 +1,53 @@
 @extends('layouts.app')
 
-@section('title', 'Import · GivingLedger')
+@section('title', 'Imported reconciliation report')
 
 @section('content')
-<section
-    class="mx-auto max-w-5xl px-4 py-12 sm:px-6"
-    data-processing-root
-    data-status-url="{{ route('try.imports.status', $batch) }}"
-    data-batch-status="{{ $batch->status }}"
->
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+<section class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <a class="text-sm font-medium text-emerald-700 hover:text-emerald-800" href="{{ route('try.show') }}">← Back to report set</a>
+
+    <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-            <p class="text-sm text-stone-500">
-                <a href="{{ route('try.show') }}" class="font-medium text-emerald-800 hover:underline">Back to workspace</a>
-            </p>
-            <h1 class="mt-2 text-3xl font-semibold tracking-tight text-stone-900">{{ $batch->original_filename }}</h1>
-            <p class="mt-2 text-sm text-stone-600">
-                Workspace time remaining: {{ $minutesRemaining }} minute{{ $minutesRemaining === 1 ? '' : 's' }}
-            </p>
+            <p class="text-sm font-medium uppercase tracking-wide text-emerald-700">{{ str($batch->report_type)->replace('_', ' ')->title() }}</p>
+            <h1 class="mt-1 text-3xl font-semibold tracking-tight text-stone-900">{{ $batch->original_filename }}</h1>
+            <p class="mt-2 text-stone-600">{{ number_format($batch->total_rows) }} staged source rows · {{ str($batch->status)->replace('_', ' ') }}</p>
         </div>
-        <div class="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm">
-            <span class="text-stone-500">Status</span>
-            <span class="ml-2 font-semibold text-stone-900" data-status-label>{{ str_replace('_', ' ', $batch->status) }}</span>
-        </div>
+        <p class="text-sm text-stone-500">Workspace expires in {{ $minutesRemaining }} minutes</p>
     </div>
 
     @if ($duplicateWarning)
-        <div class="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
-            {{ $duplicateWarning }} Showing the existing import instead of creating a new one.
-        </div>
+        <div class="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950" role="status">{{ $duplicateWarning }}</div>
     @endif
 
-    @if ($batch->isProcessing())
-        <div class="mt-8 rounded-xl border border-stone-200 bg-white p-6" data-processing-panel>
-            <h2 class="text-lg font-semibold text-stone-900">Processing your file</h2>
-            <p class="mt-2 text-sm text-stone-600">
-                Parsing rows into temporary staging records. Column mapping comes next.
-            </p>
-            <div class="mt-6">
-                <div class="h-2 overflow-hidden rounded-full bg-stone-100">
-                    <div class="h-full w-1/4 animate-pulse rounded-full bg-emerald-600" data-progress-bar></div>
-                </div>
-                <p class="mt-3 text-sm text-stone-700" data-progress-text>
-                    Processed <span data-processed-rows>{{ $batch->processed_rows }}</span>
-                    of <span data-total-rows>{{ $batch->total_rows ?: '…' }}</span> rows
-                </p>
-            </div>
+    @if ($batch->status === \App\Models\ImportBatch::STATUS_FAILED)
+        <div class="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-900" role="alert">
+            This report could not be staged. Error code: {{ $batch->processing_error_code }}.
         </div>
-    @elseif ($batch->status === \App\Models\ImportBatch::STATUS_FAILED)
-        <div class="mt-8 rounded-xl border border-red-200 bg-red-50 p-6" role="alert">
-            <h2 class="text-lg font-semibold text-red-900">Processing failed</h2>
-            <p class="mt-2 text-sm text-red-800">
-                {{ $batch->processing_error_code ?? 'PROCESSING_FAILED' }}: The file could not be parsed into staging rows.
-            </p>
-            <a href="{{ route('try.show') }}" class="mt-4 inline-flex rounded-lg bg-red-800 px-4 py-2 text-sm font-semibold text-white hover:bg-red-900">
-                Try another file
-            </a>
-        </div>
-    @elseif ($batch->status === \App\Models\ImportBatch::STATUS_MAPPING_REQUIRED)
-        <div class="mt-8 rounded-xl border border-emerald-200 bg-emerald-50 p-6">
-            <h2 class="text-lg font-semibold text-emerald-900">Parse complete</h2>
-            <p class="mt-2 text-sm text-emerald-800">
-                {{ number_format($batch->total_rows) }} rows are staged in this temporary workspace.
-                Column mapping and validation arrive in the next milestone.
-            </p>
-        </div>
-
+    @elseif (count($previewRows) > 0)
         <div class="mt-8 overflow-hidden rounded-xl border border-stone-200 bg-white">
-            <div class="border-b border-stone-200 px-4 py-3">
-                <h2 class="text-sm font-semibold uppercase tracking-wide text-stone-500">Raw preview (first 10 rows)</h2>
+            <div class="border-b border-stone-200 px-5 py-4">
+                <h2 class="font-semibold text-stone-900">Source preview</h2>
+                <p class="mt-1 text-sm text-stone-600">Original values remain immutable. Mapping and validation will create versioned interpretations.</p>
             </div>
             <div class="overflow-x-auto">
-                <table class="min-w-full text-left text-sm">
-                    <thead class="bg-stone-50 text-stone-600">
+                <table class="min-w-full divide-y divide-stone-200 text-sm">
+                    <thead class="bg-stone-50">
                         <tr>
-                            <th class="px-3 py-2 font-medium">#</th>
+                            <th class="px-4 py-3 text-left font-medium text-stone-600" scope="col">Row</th>
                             @foreach ($headers as $header)
-                                <th class="px-3 py-2 font-medium">{{ $header }}</th>
+                                <th class="px-4 py-3 text-left font-medium text-stone-600" scope="col">{{ $header }}</th>
                             @endforeach
                         </tr>
                     </thead>
-                    <tbody>
-                        @forelse ($previewRows as $row)
-                            <tr class="border-t border-stone-100 align-top">
-                                <td class="px-3 py-2 text-stone-500">{{ $row->row_number }}</td>
+                    <tbody class="divide-y divide-stone-100">
+                        @foreach ($previewRows as $row)
+                            <tr>
+                                <td class="whitespace-nowrap px-4 py-3 font-medium text-stone-700">{{ $row->row_number }}</td>
                                 @foreach ($headers as $header)
-                                    <td class="px-3 py-2 text-stone-800">{{ $row->raw_data[$header] ?? '' }}</td>
+                                    <td class="max-w-xs truncate px-4 py-3 text-stone-700">{{ $row->raw_data[$header] ?? '' }}</td>
                                 @endforeach
                             </tr>
-                        @empty
-                            <tr>
-                                <td class="px-3 py-4 text-stone-500" colspan="{{ count($headers) + 1 }}">No staged rows.</td>
-                            </tr>
-                        @endforelse
+                        @endforeach
                     </tbody>
                 </table>
             </div>

@@ -1,71 +1,68 @@
-# GivingLedger
+# Partner Donation Reconciliation
 
-Turn messy donation spreadsheets into clean, trustworthy, CRM-ready data.
+An independent Laravel demonstration that reconciles partner donation reports, payout reports, and a CRM snapshot into explainable proposed changes.
 
-Phase 1 Milestone 2 provides the public landing experience, isolated temporary guest workspaces, built-in sample data, CSV upload, and parsing into temporary staging rows. Column mapping, validation, duplicate review, and export come in later milestones.
+The repository is being rebaselined from an earlier generic CSV-cleaning concept. Its retained foundation currently provides isolated temporary workspaces, private CSV storage, bounded parsing, immutable source-row staging, and local evaluation uploads. Matching, payout reconciliation, reviewed exports, and the reference scenario are the next implementation milestones.
+
+## Demonstration boundary
+
+- Public mode accepts only catalogued synthetic fixtures.
+- Local evaluation can explicitly enable arbitrary CSV files.
+- The application does not write to Salesforce or verify bank receipt.
+- Report schemas and rules are proposed demonstration contracts.
 
 ## Requirements
 
 - Docker Desktop
 - Docker Compose v2
 
-PHP and Composer are not required on the host. The Sail containers provide PHP 8.4 and PostgreSQL.
+The Sail containers provide PHP 8.4 and PostgreSQL.
 
-## Quick start (PowerShell)
+## Quick start
 
-From the repository root:
+From the repository root in PowerShell:
 
 ```powershell
-# Copy environment file if needed, then start the stack
 Copy-Item .env.example .env -ErrorAction SilentlyContinue
 docker compose up -d --build
-
-# Generate an app key if APP_KEY is empty
 docker compose exec laravel.test php artisan key:generate
-
-# Run migrations
 docker compose exec laravel.test php artisan migrate
-
-# Optional: build frontend assets
 docker compose exec laravel.test npm install
 docker compose exec laravel.test npm run build
 ```
 
 Open [http://localhost](http://localhost).
 
-### Tests
+Run the tests with:
 
 ```powershell
 docker compose exec laravel.test php artisan test
 ```
 
-### Useful commands
+## Local evaluation uploads
 
-```powershell
-docker compose ps
-docker compose logs -f laravel.test
-docker compose down
+Arbitrary CSV uploads are disabled by default. To enable them only in a local evaluation environment, set:
+
+```dotenv
+RECONCILIATION_ALLOW_ARBITRARY_UPLOADS=true
 ```
 
-The Sail bash wrapper (`./vendor/bin/sail`) is not the Windows entry point. Prefer `docker compose` as shown above.
+The workspace presents separate report slots for donations, payouts, and a CRM snapshot. Public deployments must leave this value false and configure the approved fixture checksums instead.
 
-## Configuration
-
-Guest workspace limits live in `config/givingledger.php` and can be overridden with `GIVINGLEDGER_*` environment variables.
+## Current limits
 
 | Setting | Default |
-| --- | --- |
-| Max CSV size | 2 MB |
-| Max data rows | 1,000 |
-| Max columns | 50 |
-| Max field length | 2,000 characters |
-| Max active imports | 3 |
-| Workspace lifetime | 60 minutes |
+| --- | ---: |
+| Maximum CSV size | 1 MiB per file |
+| Maximum data rows | 2,000 per file |
+| Maximum columns | 50 |
+| Maximum field length | 4,096 characters |
+| Active imports | 3 per workspace |
+| Workspace lifetime | 24 hours |
+| Processing deadline | 20 seconds |
 
-## Sessions
-
-Local Docker uses HTTP, so `SESSION_SECURE_COOKIE` defaults to `false`. Production deployments over HTTPS must set `SESSION_SECURE_COOKIE=true`. Session cookies remain HttpOnly with SameSite=`lax`.
+Configuration lives in `config/reconciliation.php` and uses the `RECONCILIATION_*` environment variables documented in `.env.example`.
 
 ## Product specification
 
-See [spec.md](spec.md) for full product and technical requirements.
+See [spec.md](spec.md). The complete source specification is retained at [docs/Partner_Donation_Reconciliation_Spec.docx](docs/Partner_Donation_Reconciliation_Spec.docx).

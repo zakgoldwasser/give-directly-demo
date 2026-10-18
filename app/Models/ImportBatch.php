@@ -20,8 +20,6 @@ class ImportBatch extends Model
 
     public const STATUS_MAPPING_REQUIRED = 'mapping_required';
 
-    public const STATUS_QUEUED = 'queued';
-
     public const STATUS_PROCESSING = 'processing';
 
     public const STATUS_COMPLETED = 'completed';
@@ -37,7 +35,6 @@ class ImportBatch extends Model
      */
     public const ACTIVE_STATUSES = [
         self::STATUS_UPLOADED,
-        self::STATUS_QUEUED,
         self::STATUS_PROCESSING,
         self::STATUS_MAPPING_REQUIRED,
         self::STATUS_COMPLETED,
@@ -48,11 +45,10 @@ class ImportBatch extends Model
      */
     protected $fillable = [
         'guest_workspace_id',
+        'report_type',
         'original_filename',
         'private_file_path',
         'sha256_checksum',
-        'source_partner',
-        'mapping_config',
         'parsing_config',
         'status',
         'total_rows',
@@ -60,7 +56,6 @@ class ImportBatch extends Model
         'valid_rows',
         'review_rows',
         'rejected_rows',
-        'processing_version',
         'processing_error_code',
         'completed_at',
         'expires_at',
@@ -72,14 +67,12 @@ class ImportBatch extends Model
     protected function casts(): array
     {
         return [
-            'mapping_config' => 'array',
             'parsing_config' => 'array',
             'total_rows' => 'integer',
             'processed_rows' => 'integer',
             'valid_rows' => 'integer',
             'review_rows' => 'integer',
             'rejected_rows' => 'integer',
-            'processing_version' => 'integer',
             'completed_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
@@ -115,7 +108,6 @@ class ImportBatch extends Model
     {
         return in_array($this->status, [
             self::STATUS_UPLOADED,
-            self::STATUS_QUEUED,
             self::STATUS_PROCESSING,
         ], true);
     }

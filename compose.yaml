@@ -29,12 +29,6 @@ services:
             IGNITION_LOCAL_SITES_PATH: '${IGNITION_LOCAL_SITES_PATH:-.}'
         depends_on:
             - pgsql
-    queue:
-        <<: *laravel-app
-        command: 'php artisan queue:work --sleep=3 --tries=3 --timeout=90'
-        depends_on:
-            - laravel.test
-            - pgsql
     scheduler:
         <<: *laravel-app
         command: 'php artisan schedule:work'

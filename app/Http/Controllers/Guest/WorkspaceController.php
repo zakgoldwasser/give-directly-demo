@@ -18,7 +18,7 @@ class WorkspaceController extends Controller
     public function start(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'intent' => ['required', 'in:sample,upload'],
+            'intent' => ['required', 'in:guided,scenarios'],
         ]);
 
         $this->workspaces->start($validated['intent']);
@@ -34,12 +34,13 @@ class WorkspaceController extends Controller
         return view('public.try', [
             'workspace' => $workspace,
             'intent' => $this->workspaces->intent(),
-            'maxCsvSizeMb' => round(((int) config('givingledger.max_csv_size_bytes')) / 1024 / 1024, 1),
-            'maxDataRows' => (int) config('givingledger.max_data_rows'),
-            'maxColumns' => (int) config('givingledger.max_columns'),
-            'maxFieldLength' => (int) config('givingledger.max_field_length'),
-            'maxActiveImports' => (int) config('givingledger.max_active_imports_per_session'),
-            'workspaceLifetimeMinutes' => (int) config('givingledger.workspace_lifetime_minutes'),
+            'maxCsvSizeMb' => round(((int) config('reconciliation.max_csv_size_bytes')) / 1024 / 1024, 1),
+            'maxDataRows' => (int) config('reconciliation.max_data_rows'),
+            'maxColumns' => (int) config('reconciliation.max_columns'),
+            'maxFieldLength' => (int) config('reconciliation.max_field_length'),
+            'maxActiveImports' => (int) config('reconciliation.max_active_imports_per_session'),
+            'workspaceLifetimeMinutes' => (int) config('reconciliation.workspace_lifetime_minutes'),
+            'arbitraryUploadsAllowed' => (bool) config('reconciliation.allow_arbitrary_uploads'),
             'minutesRemaining' => $workspace->minutesRemaining(),
         ]);
     }

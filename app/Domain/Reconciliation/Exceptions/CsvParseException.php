@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Donations\Exceptions;
+namespace App\Domain\Reconciliation\Exceptions;
 
 use Exception;
 

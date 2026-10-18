@@ -17,8 +17,8 @@ class GuestWorkspaceTest extends TestCase
         $response = $this->get(route('landing'));
 
         $response->assertOk();
-        $response->assertSee('Try with sample data', false);
-        $response->assertSee('Upload your CSV', false);
+        $response->assertSee('Start guided demo', false);
+        $response->assertSee('Explore scenarios', false);
         $response->assertDontSee('Log in', false);
         $response->assertDontSee('Sign up', false);
     }
@@ -26,7 +26,7 @@ class GuestWorkspaceTest extends TestCase
     public function test_starting_a_session_creates_a_workspace_and_shows_expiry(): void
     {
         $response = $this->post(route('try.start'), [
-            'intent' => 'sample',
+            'intent' => 'guided',
         ]);
 
         $response->assertRedirect(route('try.show'));
@@ -35,9 +35,9 @@ class GuestWorkspaceTest extends TestCase
 
         $follow = $this->get(route('try.show'));
         $follow->assertOk();
-        $follow->assertSee('Temporary workspace', false);
+        $follow->assertSee('Reconciliation workspace', false);
         $follow->assertSee('Time remaining', false);
-        $follow->assertSee('Try with sample data', false);
+        $follow->assertSee('Partner donations', false);
     }
 
     public function test_try_page_without_a_session_redirects_home(): void
@@ -49,7 +49,7 @@ class GuestWorkspaceTest extends TestCase
 
     public function test_a_second_session_cannot_open_another_workspace(): void
     {
-        $this->post(route('try.start'), ['intent' => 'upload']);
+        $this->post(route('try.start'), ['intent' => 'scenarios']);
         $firstWorkspace = GuestWorkspace::query()->firstOrFail();
 
         $this->flushSession();
@@ -68,7 +68,7 @@ class GuestWorkspaceTest extends TestCase
 
     public function test_expired_workspace_returns_expired_page_and_json_410(): void
     {
-        $this->post(route('try.start'), ['intent' => 'sample']);
+        $this->post(route('try.start'), ['intent' => 'guided']);
 
         $workspace = GuestWorkspace::query()->firstOrFail();
         $workspace->forceFill([
@@ -86,7 +86,7 @@ class GuestWorkspaceTest extends TestCase
 
     public function test_reset_issues_a_new_workspace_and_invalidates_the_previous_secret(): void
     {
-        $this->post(route('try.start'), ['intent' => 'upload']);
+        $this->post(route('try.start'), ['intent' => 'scenarios']);
 
         $previousSecret = Session::get(WorkspaceService::SESSION_SECRET_KEY);
         $previousWorkspace = GuestWorkspace::query()->firstOrFail();

@@ -14,11 +14,10 @@ return new class extends Migration
         Schema::create('import_batches', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('guest_workspace_id')->constrained('guest_workspaces')->cascadeOnDelete();
+            $table->string('report_type');
             $table->string('original_filename');
             $table->string('private_file_path');
             $table->string('sha256_checksum', 64);
-            $table->string('source_partner')->nullable();
-            $table->jsonb('mapping_config')->nullable();
             $table->jsonb('parsing_config')->nullable();
             $table->string('status');
             $table->unsignedInteger('total_rows')->default(0);
@@ -26,14 +25,13 @@ return new class extends Migration
             $table->unsignedInteger('valid_rows')->default(0);
             $table->unsignedInteger('review_rows')->default(0);
             $table->unsignedInteger('rejected_rows')->default(0);
-            $table->unsignedInteger('processing_version')->default(1);
             $table->string('processing_error_code')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamp('expires_at');
             $table->timestamps();
 
             $table->index(['guest_workspace_id', 'status']);
-            $table->index(['guest_workspace_id', 'sha256_checksum']);
+            $table->index(['guest_workspace_id', 'report_type', 'sha256_checksum']);
             $table->index('expires_at');
         });
     }

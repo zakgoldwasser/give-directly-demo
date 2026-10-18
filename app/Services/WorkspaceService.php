@@ -25,7 +25,7 @@ class WorkspaceService
     public function start(?string $intent = null): GuestWorkspace
     {
         $secret = Str::random(64);
-        $lifetime = (int) config('givingledger.workspace_lifetime_minutes', 60);
+        $lifetime = (int) config('reconciliation.workspace_lifetime_minutes', 1_440);
         $now = now();
 
         $workspace = GuestWorkspace::query()->create([

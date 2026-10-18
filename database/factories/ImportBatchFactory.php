@@ -21,11 +21,10 @@ class ImportBatchFactory extends Factory
     {
         return [
             'guest_workspace_id' => GuestWorkspace::factory(),
+            'report_type' => 'donations',
             'original_filename' => 'donations.csv',
             'private_file_path' => Str::uuid()->toString().'/'.Str::uuid()->toString().'.csv',
             'sha256_checksum' => hash('sha256', fake()->unique()->uuid()),
-            'source_partner' => null,
-            'mapping_config' => null,
             'parsing_config' => null,
             'status' => ImportBatch::STATUS_UPLOADED,
             'total_rows' => 0,
@@ -33,7 +32,6 @@ class ImportBatchFactory extends Factory
             'valid_rows' => 0,
             'review_rows' => 0,
             'rejected_rows' => 0,
-            'processing_version' => 1,
             'processing_error_code' => null,
             'completed_at' => null,
             'expires_at' => now()->addHour(),

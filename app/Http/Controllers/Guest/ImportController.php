@@ -19,38 +19,12 @@ class ImportController extends Controller
         private readonly ImportService $imports,
     ) {}
 
-    public function sample(Request $request): RedirectResponse|JsonResponse
-    {
-        /** @var GuestWorkspace $workspace */
-        $workspace = $request->attributes->get('guest_workspace');
-
-        try {
-            $batch = $this->imports->createFromSample($workspace);
-        } catch (DuplicateImportException $exception) {
-            return $this->duplicateResponse($request, $exception);
-        } catch (ImportLimitException $exception) {
-            return $this->limitResponse($request, $exception);
-        }
-
-        if ($request->expectsJson()) {
-            return response()->json([
-                'data' => [
-                    'id' => $batch->id,
-                    'status' => $batch->status,
-                    'redirect' => route('try.imports.show', $batch),
-                ],
-            ], 201);
-        }
-
-        return redirect()->route('try.imports.show', $batch);
-    }
-
     public function store(Request $request): RedirectResponse|JsonResponse
     {
         /** @var GuestWorkspace $workspace */
         $workspace = $request->attributes->get('guest_workspace');
 
-        $maxBytes = (int) config('givingledger.max_csv_size_bytes');
+        $maxBytes = (int) config('reconciliation.max_csv_size_bytes');
 
         if ($request->hasFile('file') && $request->file('file')?->getSize() > $maxBytes) {
             return $this->errorResponse(
@@ -63,10 +37,15 @@ class ImportController extends Controller
 
         $validated = $request->validate([
             'file' => ['required', 'file', 'max:'.(int) ceil($maxBytes / 1024)],
+            'report_type' => ['required', 'in:donations,payouts,crm'],
         ]);
 
         try {
-            $batch = $this->imports->createFromUpload($workspace, $validated['file']);
+            $batch = $this->imports->createFromUpload(
+                $workspace,
+                $validated['file'],
+                $validated['report_type'],
+            );
         } catch (DuplicateImportException $exception) {
             return $this->duplicateResponse($request, $exception);
         } catch (ImportLimitException $exception) {
@@ -98,7 +77,7 @@ class ImportController extends Controller
         if ($batch->status === ImportBatch::STATUS_MAPPING_REQUIRED) {
             $previewRows = $batch->rows()
                 ->orderBy('row_number')
-                ->limit(10)
+                ->limit(20)
                 ->get();
         }
 
@@ -108,20 +87,6 @@ class ImportController extends Controller
             'headers' => $headers,
             'duplicateWarning' => $request->session()->pull('import_duplicate_warning'),
             'minutesRemaining' => $request->attributes->get('guest_workspace')->minutesRemaining(),
-        ]);
-    }
-
-    public function status(Request $request, string $import): JsonResponse
-    {
-        $batch = $this->resolveBatch($request, $import);
-
-        return response()->json([
-            'data' => [
-                'status' => $batch->status,
-                'processed_rows' => $batch->processed_rows,
-                'total_rows' => $batch->total_rows,
-                'processing_error_code' => $batch->processing_error_code,
-            ],
         ]);
     }
 

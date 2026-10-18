@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "givingledger/givingledger",
+    "name": "partner-reconciliation/demo",
     "type": "project",
-    "description": "Turn messy donation spreadsheets into clean, CRM-ready CSV exports.",
-    "keywords": ["laravel", "donations", "csv", "nonprofit"],
+    "description": "Reconcile partner donation reports, payouts, and CRM snapshots.",
+    "keywords": ["laravel", "donations", "reconciliation", "nonprofit"],
     "license": "MIT",
     "require": {
         "php": "^8.3",

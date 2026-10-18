@@ -26,11 +26,8 @@ class ImportRowFactory extends Factory
                 'Supporter' => fake()->name(),
                 'Gift Value' => '25.00',
             ],
-            'normalized_data' => null,
-            'corrected_data' => null,
             'status' => ImportRow::STATUS_STAGED,
             'validation_issues' => null,
-            'row_version' => 1,
         ];
     }
 }

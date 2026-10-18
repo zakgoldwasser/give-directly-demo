@@ -19,11 +19,10 @@ function formatBytes(bytes) {
 }
 
 export function initUpload(root = document) {
-    const form = root.querySelector('[data-upload-form]');
+    root.querySelectorAll('[data-upload-form]').forEach((form) => initUploadForm(form));
+}
 
-    if (!form) {
-        return;
-    }
+function initUploadForm(form) {
 
     const dropZone = form.querySelector('[data-drop-zone]');
     const fileInput = form.querySelector('[data-file-input]');

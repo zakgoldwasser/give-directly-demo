@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Domain\Donations\Services;
+namespace App\Domain\Reconciliation\Services;
 
-use App\Domain\Donations\Exceptions\CsvParseException;
+use App\Domain\Reconciliation\Exceptions\CsvParseException;
 
 class CsvParserService
 {
@@ -15,10 +15,10 @@ class CsvParserService
      */
     public function parse(string $absolutePath): array
     {
-        $maxBytes = (int) config('givingledger.max_csv_size_bytes');
-        $maxRows = (int) config('givingledger.max_data_rows');
-        $maxColumns = (int) config('givingledger.max_columns');
-        $maxFieldLength = (int) config('givingledger.max_field_length');
+        $maxBytes = (int) config('reconciliation.max_csv_size_bytes');
+        $maxRows = (int) config('reconciliation.max_data_rows');
+        $maxColumns = (int) config('reconciliation.max_columns');
+        $maxFieldLength = (int) config('reconciliation.max_field_length');
 
         if (! is_readable($absolutePath)) {
             throw new CsvParseException('FILE_UNREADABLE', 'The uploaded file could not be read.');

@@ -24,11 +24,8 @@ class ImportRow extends Model
         'import_batch_id',
         'row_number',
         'raw_data',
-        'normalized_data',
-        'corrected_data',
         'status',
         'validation_issues',
-        'row_version',
     ];
 
     /**
@@ -38,11 +35,8 @@ class ImportRow extends Model
     {
         return [
             'raw_data' => 'array',
-            'normalized_data' => 'array',
-            'corrected_data' => 'array',
             'validation_issues' => 'array',
             'row_number' => 'integer',
-            'row_version' => 'integer',
         ];
     }
 

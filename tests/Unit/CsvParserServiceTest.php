@@ -2,8 +2,8 @@
 
 namespace Tests\Unit;
 
-use App\Domain\Donations\Exceptions\CsvParseException;
-use App\Domain\Donations\Services\CsvParserService;
+use App\Domain\Reconciliation\Exceptions\CsvParseException;
+use App\Domain\Reconciliation\Services\CsvParserService;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -18,7 +18,7 @@ class CsvParserServiceTest extends TestCase
         parent::setUp();
 
         $this->parser = new CsvParserService;
-        $this->tempDir = sys_get_temp_dir().'/givingledger-csv-'.uniqid('', true);
+        $this->tempDir = sys_get_temp_dir().'/reconciliation-csv-'.uniqid('', true);
         mkdir($this->tempDir);
     }
 
@@ -93,7 +93,7 @@ class CsvParserServiceTest extends TestCase
     #[Test]
     public function it_rejects_too_many_rows(): void
     {
-        config(['givingledger.max_data_rows' => 2]);
+        config(['reconciliation.max_data_rows' => 2]);
 
         $path = $this->write(
             'rows.csv',
@@ -111,7 +111,7 @@ class CsvParserServiceTest extends TestCase
     #[Test]
     public function it_rejects_too_many_columns(): void
     {
-        config(['givingledger.max_columns' => 2]);
+        config(['reconciliation.max_columns' => 2]);
 
         $path = $this->write('cols.csv', "A,B,C\n1,2,3\n");
 
@@ -126,7 +126,7 @@ class CsvParserServiceTest extends TestCase
     #[Test]
     public function it_rejects_fields_that_are_too_long(): void
     {
-        config(['givingledger.max_field_length' => 5]);
+        config(['reconciliation.max_field_length' => 5]);
 
         $path = $this->write('long.csv', "Name\nabcdef\n");
 
