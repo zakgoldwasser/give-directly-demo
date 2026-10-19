@@ -101,4 +101,20 @@ class GuestWorkspace extends Model
     {
         return $this->hasMany(ReviewDecision::class);
     }
+
+    /**
+     * @return HasMany<ReconciliationApproval, $this>
+     */
+    public function reconciliationApprovals(): HasMany
+    {
+        return $this->hasMany(ReconciliationApproval::class);
+    }
+
+    /**
+     * @return HasMany<ExportBatch, $this>
+     */
+    public function exportBatches(): HasMany
+    {
+        return $this->hasMany(ExportBatch::class);
+    }
 }

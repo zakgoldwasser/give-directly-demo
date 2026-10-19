@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Guest\ApprovalController;
 use App\Http\Controllers\Guest\CampaignReviewController;
+use App\Http\Controllers\Guest\ExportController;
+use App\Http\Controllers\Guest\ExportDownloadController;
 use App\Http\Controllers\Guest\FixtureController;
 use App\Http\Controllers\Guest\ImportController;
 use App\Http\Controllers\Guest\LandingController;
@@ -28,4 +31,7 @@ Route::middleware(EnsureGuestWorkspace::class)->group(function () {
     Route::post('/try/imports/{import}/mapping', MappingController::class)->name('try.imports.mapping.store');
     Route::post('/try/review/campaigns', CampaignReviewController::class)->name('try.review.campaigns.store');
     Route::post('/try/review/matches', MatchReviewController::class)->name('try.review.matches.store');
+    Route::post('/try/approvals', ApprovalController::class)->name('try.approvals.store');
+    Route::post('/try/exports', ExportController::class)->name('try.exports.store');
+    Route::get('/try/exports/{export}/download', ExportDownloadController::class)->name('try.exports.download');
 });

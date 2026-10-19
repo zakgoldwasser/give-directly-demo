@@ -25,7 +25,8 @@ class ReviewDecisionService
                 ->where('subject_key', $campaignCode)
                 ->orderByDesc('sequence')
                 ->first();
-            $result = $this->latestRun($workspace)->gifts()
+            $run = $this->latestRun($workspace);
+            $result = $run->gifts()
                 ->with('gift.activeVersion')
                 ->get()
                 ->first(function (GiftReconciliation $result) use ($campaignCode): bool {
@@ -65,6 +66,8 @@ class ReviewDecisionService
                 [
                     'canonical_gift_id' => $gift->id,
                     'active_version_id' => $gift->active_version_id,
+                    'based_on_reconciliation_run_id' => $run->id,
+                    'based_on_reconciliation_run_sequence' => $run->sequence,
                 ],
             );
 
@@ -120,6 +123,8 @@ class ReviewDecisionService
                     'gift_reconciliation_id' => $result->id,
                     'candidate_canonical_record_id' => $candidate->id,
                     'candidate_active_version_id' => $candidate->active_version_id,
+                    'based_on_reconciliation_run_id' => $run->id,
+                    'based_on_reconciliation_run_sequence' => $run->sequence,
                 ],
             );
 

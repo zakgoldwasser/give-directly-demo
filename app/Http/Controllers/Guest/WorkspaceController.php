@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Guest;
 
+use App\Domain\Reconciliation\Services\ApprovalService;
+use App\Domain\Reconciliation\Services\ExportService;
 use App\Domain\Reconciliation\Services\ReferenceFixtureCatalog;
 use App\Domain\Reconciliation\Services\ReviewDecisionService;
 use App\Http\Controllers\Controller;
@@ -20,6 +22,7 @@ class WorkspaceController extends Controller
         private readonly ReferenceScenarioService $referenceScenario,
         private readonly ReferenceFixtureCatalog $fixtures,
         private readonly ReviewDecisionService $reviews,
+        private readonly ApprovalService $approvals,
     ) {}
 
     public function start(Request $request): RedirectResponse
@@ -46,10 +49,13 @@ class WorkspaceController extends Controller
             ->orderByDesc('sequence')
             ->first();
 
+        $reviewOptions = $this->reviews->options($workspace, $reconciliationRun);
+        $imports = $workspace->importBatches()->with('mappingProfile')->get()->keyBy('report_type');
+
         return view('public.try', [
             'workspace' => $workspace,
             'intent' => $this->workspaces->intent(),
-            'imports' => $workspace->importBatches()->with('mappingProfile')->get()->keyBy('report_type'),
+            'imports' => $imports,
             'canonicalCounts' => $workspace->canonicalRecords()
                 ->whereIn('resolution_status', [
                     CanonicalRecord::RESOLUTION_ACTIVE,
@@ -59,7 +65,11 @@ class WorkspaceController extends Controller
                 ->groupBy('record_type')
                 ->pluck('aggregate', 'record_type'),
             'reconciliationRun' => $reconciliationRun,
-            'reviewOptions' => $this->reviews->options($workspace, $reconciliationRun),
+            'reviewOptions' => $reviewOptions,
+            'approvalPreview' => $this->approvals->preview($workspace, $reconciliationRun),
+            'exportBatch' => $reconciliationRun?->exportBatches()->orderByDesc('generated_at')->first(),
+            'exportProfileVersion' => ExportService::PROFILE_VERSION,
+            'crmSnapshotGeneratedAt' => $imports->get('crm')?->context['generated_at'] ?? null,
             'fixtureReports' => $this->fixtures->reports(),
             'maxCsvSizeMb' => round(((int) config('reconciliation.max_csv_size_bytes')) / 1024 / 1024, 1),
             'maxDataRows' => (int) config('reconciliation.max_data_rows'),

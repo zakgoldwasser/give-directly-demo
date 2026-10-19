@@ -56,4 +56,14 @@ class ReconciliationRun extends Model
     {
         return $this->hasMany(PayoutReconciliation::class);
     }
+
+    public function approvals(): HasMany
+    {
+        return $this->hasMany(ReconciliationApproval::class);
+    }
+
+    public function exportBatches(): HasMany
+    {
+        return $this->hasMany(ExportBatch::class);
+    }
 }

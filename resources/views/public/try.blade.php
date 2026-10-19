@@ -54,6 +54,18 @@
         </div>
     @endif
 
+    @if (session('approval_saved'))
+        <div class="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
+            {{ session('approval_saved') }}
+        </div>
+    @endif
+
+    @if (session('export_prepared'))
+        <div class="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
+            {{ session('export_prepared') }}
+        </div>
+    @endif
+
     @if ($errors->any())
         <div class="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="alert">
             {{ $errors->first() }}
@@ -166,6 +178,88 @@
                             <button class="mt-4 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800" type="submit">Confirm CRM match</button>
                         </form>
                     @endforeach
+                </div>
+            @endif
+        </section>
+    @endif
+
+    @if ($reconciliationRun && $approvalPreview['eligible_count'] > 0)
+        <section class="mt-8 rounded-xl border border-stone-200 bg-white p-6" aria-labelledby="approval-heading">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <p class="text-sm font-medium uppercase tracking-wide text-emerald-700">Approval and export</p>
+                    <h2 id="approval-heading" class="mt-1 text-xl font-semibold text-stone-900">Review the proposed destination changes</h2>
+                    <p class="mt-2 text-sm text-stone-600">Approvals apply only to run {{ $reconciliationRun->sequence }}. Any changed evidence or review decision requires a new approval.</p>
+                    <p class="mt-1 text-xs text-stone-500">Destination profile {{ $exportProfileVersion }}@if ($crmSnapshotGeneratedAt) · CRM snapshot {{ $crmSnapshotGeneratedAt }}@endif</p>
+                </div>
+                <p class="text-sm font-medium text-stone-700">{{ $approvalPreview['approved_count'] }} of {{ $approvalPreview['eligible_count'] }} approved</p>
+            </div>
+
+            <div class="mt-5 overflow-x-auto rounded-lg border border-stone-200">
+                <table class="min-w-full divide-y divide-stone-200 text-left text-sm">
+                    <thead class="bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
+                        <tr>
+                            <th class="px-4 py-3" scope="col">Gift</th>
+                            <th class="px-4 py-3" scope="col">Action</th>
+                            <th class="px-4 py-3" scope="col">Before</th>
+                            <th class="px-4 py-3" scope="col">After</th>
+                            <th class="px-4 py-3" scope="col">Review</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-stone-200">
+                        @foreach ($approvalPreview['eligible'] as $action)
+                            <tr>
+                                <th class="whitespace-nowrap px-4 py-3 font-medium text-stone-900" scope="row">{{ $action['transaction_id'] }}</th>
+                                <td class="px-4 py-3 capitalize text-stone-700">{{ $action['action'] }}</td>
+                                <td class="px-4 py-3 text-stone-600">
+                                    @if ($action['before_values'] === null)
+                                        Absent from this CRM snapshot
+                                    @elseif ($action['differences'] !== [])
+                                        @foreach ($action['differences'] as $difference)
+                                            <span class="block">{{ str_replace('_', ' ', $difference['field']) }}: {{ is_bool($difference['destination']) ? ($difference['destination'] ? 'true' : 'false') : ($difference['destination'] ?? 'blank') }}</span>
+                                        @endforeach
+                                    @else
+                                        No changed fields
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-stone-600">
+                                    @if ($action['action'] === 'create')
+                                        {{ $action['after_values']['currency'] }} {{ number_format($action['after_values']['gross_amount_minor'] / 100, 2) }} · {{ $action['after_values']['campaign_id'] }}
+                                    @else
+                                        @foreach ($action['differences'] as $difference)
+                                            <span class="block">{{ str_replace('_', ' ', $difference['field']) }}: {{ is_bool($difference['source']) ? ($difference['source'] ? 'true' : 'false') : ($difference['source'] ?? 'blank') }}</span>
+                                        @endforeach
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-stone-700">{{ $action['approved'] ? 'Approved' : 'Open' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            @if (! $approvalPreview['complete'])
+                @if ($reviewOptions['campaigns'] !== [] || $reviewOptions['matches'] !== [])
+                    <p class="mt-4 text-sm text-amber-800">Finish the campaign and candidate reviews above before approving this run.</p>
+                @else
+                    <form class="mt-5" method="POST" action="{{ route('try.approvals.store') }}">
+                        @csrf
+                        <input type="hidden" name="run_id" value="{{ $reconciliationRun->id }}">
+                        <button class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800" type="submit">Approve {{ $approvalPreview['eligible_count'] }} eligible changes</button>
+                    </form>
+                @endif
+            @elseif ($exportBatch === null)
+                <form class="mt-5" method="POST" action="{{ route('try.exports.store') }}">
+                    @csrf
+                    <input type="hidden" name="run_id" value="{{ $reconciliationRun->id }}">
+                    <button class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800" type="submit">Create reviewed export package</button>
+                </form>
+            @else
+                <div class="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
+                    <p class="font-medium">Reviewed package ready</p>
+                    <p class="mt-1">{{ $exportBatch->counts['creates'] }} creates · {{ $exportBatch->counts['updates'] }} updates · {{ $exportBatch->counts['held'] }} held exclusions</p>
+                    <p class="mt-1 text-xs text-emerald-800">Downloading records delivery of the package only. It does not write to a CRM.</p>
+                    <a class="mt-3 inline-flex rounded-lg bg-emerald-700 px-4 py-2 font-medium text-white hover:bg-emerald-800" href="{{ route('try.exports.download', $exportBatch) }}">Download ZIP</a>
                 </div>
             @endif
         </section>

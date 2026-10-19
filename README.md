@@ -2,7 +2,7 @@
 
 An independent Laravel demonstration that reconciles partner donation reports, payout reports, and a CRM snapshot into explainable proposed changes.
 
-The application currently provides isolated temporary workspaces, private CSV storage, bounded parsing, immutable source-row staging, versioned mappings, canonical record history, deterministic CRM matching, and payout reconciliation. The guided reference reports produce persisted, explainable reconciliation outcomes. Reviewers can record campaign mappings and confirm supported CRM candidates; each decision creates a new immutable run. Approval, exports, and simulated CRM write confirmation remain future milestones.
+The application currently provides isolated temporary workspaces, private CSV storage, bounded parsing, immutable source-row staging, versioned mappings, canonical record history, deterministic CRM matching, and payout reconciliation. The guided reference reports produce persisted, explainable reconciliation outcomes. Reviewers can record campaign mappings, confirm supported CRM candidates, approve the current run, and download an immutable reviewed ZIP package. Simulated CRM confirmation remains a future milestone.
 
 ## Demonstration boundary
 
@@ -48,6 +48,12 @@ RECONCILIATION_ALLOW_ARBITRARY_UPLOADS=true
 ```
 
 The workspace presents separate report slots for donations, payouts, and a CRM snapshot. Public deployments must leave this value false and configure the approved fixture checksums instead.
+
+## Reviewed export package
+
+An approved current run produces a private ZIP containing `creates.csv`, `updates.csv`, `held.csv`, `audit.csv`, and `manifest.json`. Creating or downloading this package does not write to a CRM. The generic destination profile exports only gift fields; donor names, email addresses, and contact consent are excluded.
+
+Configure `external_gift_key`, `source_transaction_id`, `crm_record_id`, and `campaign_id` as text columns in the destination importer so leading-zero identifiers remain unchanged. Configure `gross_amount` and `refunded_amount` as fixed two-decimal values, and validate the manifest checksums before import.
 
 ## Current limits
 
