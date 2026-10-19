@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Guest;
 
 use App\Domain\Reconciliation\Services\ReferenceFixtureCatalog;
+use App\Domain\Reconciliation\Services\ReviewDecisionService;
 use App\Http\Controllers\Controller;
 use App\Models\CanonicalRecord;
 use App\Models\GuestWorkspace;
@@ -18,6 +19,7 @@ class WorkspaceController extends Controller
         private readonly WorkspaceService $workspaces,
         private readonly ReferenceScenarioService $referenceScenario,
         private readonly ReferenceFixtureCatalog $fixtures,
+        private readonly ReviewDecisionService $reviews,
     ) {}
 
     public function start(Request $request): RedirectResponse
@@ -57,6 +59,7 @@ class WorkspaceController extends Controller
                 ->groupBy('record_type')
                 ->pluck('aggregate', 'record_type'),
             'reconciliationRun' => $reconciliationRun,
+            'reviewOptions' => $this->reviews->options($workspace, $reconciliationRun),
             'fixtureReports' => $this->fixtures->reports(),
             'maxCsvSizeMb' => round(((int) config('reconciliation.max_csv_size_bytes')) / 1024 / 1024, 1),
             'maxDataRows' => (int) config('reconciliation.max_data_rows'),

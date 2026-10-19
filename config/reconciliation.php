@@ -28,6 +28,10 @@ return [
         'EMERGENCY' => 'CAMPAIGN-EMERGENCY',
     ],
 
+    'campaign_suggestions' => [
+        'NEW-PROGRAM' => 'CAMPAIGN-NEW-PROGRAM',
+    ],
+
     'github_url' => filled(env('RECONCILIATION_GITHUB_URL'))
         ? env('RECONCILIATION_GITHUB_URL')
         : '#',

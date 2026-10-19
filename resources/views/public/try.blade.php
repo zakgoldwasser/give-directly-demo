@@ -48,6 +48,18 @@
         </dl>
     @endif
 
+    @if (session('review_saved'))
+        <div class="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
+            {{ session('review_saved') }}
+        </div>
+    @endif
+
+    @if ($errors->any())
+        <div class="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="alert">
+            {{ $errors->first() }}
+        </div>
+    @endif
+
     @if ($reconciliationRun)
         <section class="mt-8 rounded-xl border border-stone-200 bg-white p-6" aria-labelledby="reconciliation-summary-heading">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -96,10 +108,67 @@
         </section>
     @endif
 
-    @if ($errors->any())
-        <div class="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="alert">
-            {{ $errors->first() }}
-        </div>
+    @if ($reviewOptions['campaigns'] !== [] || $reviewOptions['matches'] !== [])
+        <section class="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-6" aria-labelledby="review-heading">
+            <p class="text-sm font-medium uppercase tracking-wide text-amber-800">Human review required</p>
+            <h2 id="review-heading" class="mt-1 text-xl font-semibold text-stone-900">Review held records</h2>
+            <p class="mt-3 max-w-3xl text-sm text-stone-700">Each saved decision is retained as evidence and creates a new immutable reconciliation run. Confirm only values supported by the source reports.</p>
+
+            @if ($reviewOptions['campaigns'] !== [])
+                <div class="mt-6 space-y-4">
+                    <h3 class="text-sm font-semibold text-stone-900">Map campaign codes</h3>
+                    @foreach ($reviewOptions['campaigns'] as $campaign)
+                        <form class="rounded-lg border border-amber-200 bg-white p-4" method="POST" action="{{ route('try.review.campaigns.store') }}">
+                            @csrf
+                            <input type="hidden" name="campaign_code" value="{{ $campaign['campaign_code'] }}">
+                            <div class="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                                <div>
+                                    <p class="text-xs text-stone-500">Partner campaign code</p>
+                                    <p class="mt-1 font-medium text-stone-900">{{ $campaign['campaign_code'] }}</p>
+                                    <p class="mt-1 text-xs text-stone-500">Gift {{ implode(', ', $campaign['transaction_ids']) }}</p>
+                                </div>
+                                <label class="block text-sm font-medium text-stone-800">
+                                    Destination campaign ID
+                                    <input class="mt-1 block w-full rounded-md border-stone-300 text-sm shadow-sm focus:border-emerald-600 focus:ring-emerald-600" name="campaign_id" type="text" maxlength="255" required value="{{ old('campaign_id', $campaign['suggested_campaign_id'] ?? '') }}">
+                                </label>
+                                <button class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800" type="submit">Save mapping</button>
+                            </div>
+                        </form>
+                    @endforeach
+                </div>
+            @endif
+
+            @if ($reviewOptions['matches'] !== [])
+                <div class="mt-6 space-y-4">
+                    <h3 class="text-sm font-semibold text-stone-900">Confirm CRM candidates</h3>
+                    @foreach ($reviewOptions['matches'] as $matchIndex => $match)
+                        <form class="rounded-lg border border-amber-200 bg-white p-4" method="POST" action="{{ route('try.review.matches.store') }}">
+                            @csrf
+                            <input type="hidden" name="transaction_id" value="{{ $match['transaction_id'] }}">
+                            <fieldset>
+                                <legend class="font-medium text-stone-900">Gift {{ $match['transaction_id'] }}</legend>
+                                <p class="mt-1 text-xs text-stone-500">
+                                    {{ $match['currency'] }} {{ number_format($match['gross_amount_minor'] / 100, 2) }} · {{ $match['gifted_at'] }} · {{ $match['donor_ref'] ?? $match['donor_email'] ?? 'No donor reference' }}
+                                </p>
+                                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                    @foreach ($match['candidates'] as $candidateIndex => $candidate)
+                                        <label class="flex cursor-pointer gap-3 rounded-lg border border-stone-200 p-3" for="match-{{ $matchIndex }}-candidate-{{ $candidateIndex }}">
+                                            <input id="match-{{ $matchIndex }}-candidate-{{ $candidateIndex }}" name="crm_record_id" type="radio" required value="{{ $candidate['crm_record_id'] }}">
+                                            <span class="text-sm">
+                                                <span class="block font-medium text-stone-900">{{ $candidate['crm_record_id'] }}</span>
+                                                <span class="mt-1 block text-stone-600">{{ $candidate['currency'] }} {{ number_format($candidate['gross_amount_minor'] / 100, 2) }} · {{ $candidate['gifted_at'] }}</span>
+                                                <span class="mt-1 block text-xs text-stone-500">{{ $candidate['donor_ref'] ?? $candidate['donor_email'] ?? 'No donor reference' }}</span>
+                                            </span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </fieldset>
+                            <button class="mt-4 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800" type="submit">Confirm CRM match</button>
+                        </form>
+                    @endforeach
+                </div>
+            @endif
+        </section>
     @endif
 
     @php

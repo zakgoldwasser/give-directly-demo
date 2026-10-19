@@ -2,7 +2,7 @@
 
 An independent Laravel demonstration that reconciles partner donation reports, payout reports, and a CRM snapshot into explainable proposed changes.
 
-The application currently provides isolated temporary workspaces, private CSV storage, bounded parsing, immutable source-row staging, versioned mappings, canonical record history, deterministic CRM matching, and payout reconciliation. The guided reference reports produce persisted, explainable reconciliation outcomes. Review decisions, approved exports, and simulated CRM confirmation remain future milestones.
+The application currently provides isolated temporary workspaces, private CSV storage, bounded parsing, immutable source-row staging, versioned mappings, canonical record history, deterministic CRM matching, and payout reconciliation. The guided reference reports produce persisted, explainable reconciliation outcomes. Reviewers can record campaign mappings and confirm supported CRM candidates; each decision creates a new immutable run. Approval, exports, and simulated CRM write confirmation remain future milestones.
 
 ## Demonstration boundary
 
