@@ -63,6 +63,10 @@ After confirmation, the guided flow can promote that immutable snapshot to the a
 
 The workspace run history presents that evidence as a read-only timeline. Each run detail links its source checksums and mapping profiles to review decisions, gift and payout outcomes, approvals, export packages, snapshot confirmations, and any later verification run.
 
+## Workspace cleanup
+
+Expired guest workspaces and their private import and export directories are purged by the `workspaces:purge-expired` command. The command is idempotent and scheduled every 15 minutes; production must invoke Laravel's scheduler every minute. A workspace database record is retained when either private storage directory cannot be deleted so a later scheduler run can retry.
+
 ## Current limits
 
 | Setting | Default |
