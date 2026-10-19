@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ExportBatch extends Model
 {
@@ -13,6 +14,8 @@ class ExportBatch extends Model
     public const STATUS_PREPARED = 'prepared';
 
     public const STATUS_DOWNLOADED = 'downloaded';
+
+    public const STATUS_CHECKED = 'checked';
 
     /** @var list<string> */
     protected $fillable = [
@@ -28,6 +31,7 @@ class ExportBatch extends Model
         'byte_size',
         'generated_at',
         'downloaded_at',
+        'checked_at',
     ];
 
     /** @return array<string, string> */
@@ -40,6 +44,7 @@ class ExportBatch extends Model
             'byte_size' => 'integer',
             'generated_at' => 'immutable_datetime',
             'downloaded_at' => 'immutable_datetime',
+            'checked_at' => 'immutable_datetime',
         ];
     }
 
@@ -51,5 +56,10 @@ class ExportBatch extends Model
     public function run(): BelongsTo
     {
         return $this->belongsTo(ReconciliationRun::class, 'reconciliation_run_id');
+    }
+
+    public function confirmations(): HasMany
+    {
+        return $this->hasMany(ConfirmationBatch::class);
     }
 }

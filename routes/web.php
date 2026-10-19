@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Guest\ApprovalController;
 use App\Http\Controllers\Guest\CampaignReviewController;
+use App\Http\Controllers\Guest\ConfirmationController;
 use App\Http\Controllers\Guest\ExportController;
 use App\Http\Controllers\Guest\ExportDownloadController;
 use App\Http\Controllers\Guest\FixtureController;
@@ -34,4 +35,5 @@ Route::middleware(EnsureGuestWorkspace::class)->group(function () {
     Route::post('/try/approvals', ApprovalController::class)->name('try.approvals.store');
     Route::post('/try/exports', ExportController::class)->name('try.exports.store');
     Route::get('/try/exports/{export}/download', ExportDownloadController::class)->name('try.exports.download');
+    Route::post('/try/exports/{export}/confirm', ConfirmationController::class)->name('try.exports.confirm');
 });

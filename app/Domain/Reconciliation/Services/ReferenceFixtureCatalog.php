@@ -42,6 +42,8 @@ class ReferenceFixtureCatalog
             $this->validateReport($manifest, $reportType);
         }
 
+        $this->validateConfirmationSnapshot($manifest);
+
         return $this->manifest = $manifest;
     }
 
@@ -90,6 +92,31 @@ class ReferenceFixtureCatalog
         return is_array($report)
             && isset($report['sha256'])
             && hash_equals((string) $report['sha256'], strtolower($checksum));
+    }
+
+    /** @return array<string, mixed> */
+    public function confirmationSnapshot(): array
+    {
+        $snapshot = $this->scenario()['confirmation_snapshot'] ?? null;
+
+        if (! is_array($snapshot)) {
+            throw new RuntimeException('The reference confirmation snapshot is missing.');
+        }
+
+        return $snapshot;
+    }
+
+    public function confirmationSnapshotPath(): string
+    {
+        $filename = $this->confirmationSnapshot()['filename'];
+        $path = dirname($this->manifestPath()).DIRECTORY_SEPARATOR.$filename;
+        $realPath = realpath($path);
+
+        if ($realPath === false || ! is_file($realPath)) {
+            throw new RuntimeException('The reference confirmation snapshot file is missing.');
+        }
+
+        return $realPath;
     }
 
     /**
@@ -143,6 +170,25 @@ class ReferenceFixtureCatalog
 
         if ($actualChecksum === false || ! hash_equals((string) $report['sha256'], $actualChecksum)) {
             throw new RuntimeException("The reference {$reportType} fixture checksum does not match its manifest.");
+        }
+    }
+
+    /** @param array<string, mixed> $manifest */
+    private function validateConfirmationSnapshot(array $manifest): void
+    {
+        $snapshot = $manifest['confirmation_snapshot'] ?? null;
+
+        if (! is_array($snapshot)
+            || ! isset($snapshot['filename'], $snapshot['sha256'], $snapshot['expected_rows'], $snapshot['expected'])
+            || ! is_array($snapshot['expected'])) {
+            throw new RuntimeException('The reference confirmation snapshot entry is incomplete.');
+        }
+
+        $path = dirname($this->manifestPath()).DIRECTORY_SEPARATOR.$snapshot['filename'];
+        $actualChecksum = is_file($path) ? hash_file('sha256', $path) : false;
+
+        if ($actualChecksum === false || ! hash_equals((string) $snapshot['sha256'], $actualChecksum)) {
+            throw new RuntimeException('The reference confirmation snapshot checksum does not match its manifest.');
         }
     }
 }

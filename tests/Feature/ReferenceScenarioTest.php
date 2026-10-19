@@ -37,6 +37,11 @@ class ReferenceScenarioTest extends TestCase
             $this->assertSame($report['expected_rows'], $parser->parse($path)['total_rows']);
         }
 
+        $confirmation = $catalog->confirmationSnapshot();
+        $confirmationPath = $catalog->confirmationSnapshotPath();
+        $this->assertSame($confirmation['sha256'], hash_file('sha256', $confirmationPath));
+        $this->assertSame($confirmation['expected_rows'], $parser->parse($confirmationPath)['total_rows']);
+
         $this->assertSame([
             'donation_rows' => 13,
             'logical_gifts' => 12,

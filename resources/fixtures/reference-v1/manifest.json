@@ -56,6 +56,19 @@
             }
         }
     },
+    "confirmation_snapshot": {
+        "filename": "crm-post-import.csv",
+        "sha256": "610ef8629925e772d367fa4a86bc3f4aa7ad9327c6640206c8f6b8991c379407",
+        "expected_rows": 10,
+        "complete_snapshot": true,
+        "simulated": true,
+        "expected": {
+            "matches_snapshot": 6,
+            "mismatches_snapshot": 0,
+            "duplicate_key": 0,
+            "cannot_verify_coverage": 0
+        }
+    },
     "expected": {
         "donation_rows": 13,
         "logical_gifts": 12,

@@ -66,6 +66,12 @@
         </div>
     @endif
 
+    @if (session('confirmation_completed'))
+        <div class="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
+            {{ session('confirmation_completed') }}
+        </div>
+    @endif
+
     @if ($errors->any())
         <div class="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="alert">
             {{ $errors->first() }}
@@ -261,6 +267,76 @@
                     <p class="mt-1 text-xs text-emerald-800">Downloading records delivery of the package only. It does not write to a CRM.</p>
                     <a class="mt-3 inline-flex rounded-lg bg-emerald-700 px-4 py-2 font-medium text-white hover:bg-emerald-800" href="{{ route('try.exports.download', $exportBatch) }}">Download ZIP</a>
                 </div>
+
+                @if ($confirmationBatch === null)
+                    <div class="mt-4 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sm text-sky-950">
+                        <p class="font-medium">Check the exported actions against a later snapshot</p>
+                        <p class="mt-1 text-xs text-sky-800">The guided demo uses a fixed, complete post-import CRM snapshot and compares only the approved destination fields.</p>
+                        <form class="mt-3" method="POST" action="{{ route('try.exports.confirm', $exportBatch) }}">
+                            @csrf
+                            <button class="rounded-lg bg-sky-700 px-4 py-2 font-medium text-white hover:bg-sky-800" type="submit">Simulate CRM confirmation</button>
+                        </form>
+                    </div>
+                @else
+                    @php
+                        $confirmationLabels = [
+                            \App\Models\ConfirmationResult::OUTCOME_MATCHES => 'Match',
+                            \App\Models\ConfirmationResult::OUTCOME_MISMATCHES => 'Mismatch',
+                            \App\Models\ConfirmationResult::OUTCOME_DUPLICATE => 'Duplicate key',
+                            \App\Models\ConfirmationResult::OUTCOME_CANNOT_VERIFY => 'Cannot verify',
+                        ];
+                    @endphp
+                    <div class="mt-4 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sm text-sky-950">
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <p class="font-medium">Simulated CRM confirmation</p>
+                                <p class="mt-1 text-xs text-sky-800">{{ $confirmationBatch->snapshot_filename }} · generated {{ $confirmationBatch->snapshot_generated_at->format('j M Y, H:i T') }} · {{ $confirmationBatch->coverage_status }} coverage</p>
+                            </div>
+                            <p class="font-medium">{{ $confirmationBatch->counts[\App\Models\ConfirmationResult::OUTCOME_MATCHES] ?? 0 }} of {{ array_sum($confirmationBatch->counts) }} match</p>
+                        </div>
+
+                        <dl class="mt-4 grid gap-2 sm:grid-cols-4">
+                            @foreach ($confirmationLabels as $outcome => $label)
+                                <div class="rounded-md bg-white/70 p-3">
+                                    <dt class="text-xs text-sky-800">{{ $label }}</dt>
+                                    <dd class="mt-1 text-lg font-semibold">{{ $confirmationBatch->counts[$outcome] ?? 0 }}</dd>
+                                </div>
+                            @endforeach
+                        </dl>
+
+                        <div class="mt-4 overflow-x-auto rounded-lg border border-sky-200 bg-white">
+                            <table class="min-w-full divide-y divide-sky-100 text-left text-sm">
+                                <thead class="bg-sky-50 text-xs uppercase tracking-wide text-sky-800">
+                                    <tr>
+                                        <th class="px-3 py-2" scope="col">Gift</th>
+                                        <th class="px-3 py-2" scope="col">Action</th>
+                                        <th class="px-3 py-2" scope="col">Outcome</th>
+                                        <th class="px-3 py-2" scope="col">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-sky-100">
+                                    @foreach ($confirmationBatch->results as $result)
+                                        <tr>
+                                            <th class="px-3 py-2 font-medium" scope="row">{{ $result->transaction_id }}</th>
+                                            <td class="px-3 py-2 capitalize">{{ $result->expected_action }}</td>
+                                            <td class="px-3 py-2">{{ $confirmationLabels[$result->outcome] }}</td>
+                                            <td class="px-3 py-2 text-xs text-sky-800">
+                                                @if ($result->differences !== [])
+                                                    {{ implode(', ', array_map(fn ($field) => str_replace('_', ' ', $field), array_keys($result->differences))) }}
+                                                @elseif ($result->matched_crm_record_ids !== [])
+                                                    {{ implode(', ', $result->matched_crm_record_ids) }}
+                                                @else
+                                                    No record in covered snapshot
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="mt-3 text-xs text-sky-800">Snapshot agreement confirms the recorded values. It does not prove that an external CRM import ran.</p>
+                    </div>
+                @endif
             @endif
         </section>
     @endif

@@ -2,7 +2,7 @@
 
 An independent Laravel demonstration that reconciles partner donation reports, payout reports, and a CRM snapshot into explainable proposed changes.
 
-The application currently provides isolated temporary workspaces, private CSV storage, bounded parsing, immutable source-row staging, versioned mappings, canonical record history, deterministic CRM matching, and payout reconciliation. The guided reference reports produce persisted, explainable reconciliation outcomes. Reviewers can record campaign mappings, confirm supported CRM candidates, approve the current run, and download an immutable reviewed ZIP package. Simulated CRM confirmation remains a future milestone.
+The application currently provides isolated temporary workspaces, private CSV storage, bounded parsing, immutable source-row staging, versioned mappings, canonical record history, deterministic CRM matching, and payout reconciliation. The guided reference reports produce persisted, explainable reconciliation outcomes. Reviewers can record campaign mappings, confirm supported CRM candidates, approve the current run, download an immutable reviewed ZIP package, and compare its approved actions with a fixed post-import CRM snapshot.
 
 ## Demonstration boundary
 
@@ -54,6 +54,10 @@ The workspace presents separate report slots for donations, payouts, and a CRM s
 An approved current run produces a private ZIP containing `creates.csv`, `updates.csv`, `held.csv`, `audit.csv`, and `manifest.json`. Creating or downloading this package does not write to a CRM. The generic destination profile exports only gift fields; donor names, email addresses, and contact consent are excluded.
 
 Configure `external_gift_key`, `source_transaction_id`, `crm_record_id`, and `campaign_id` as text columns in the destination importer so leading-zero identifiers remain unchanged. Configure `gross_amount` and `refunded_amount` as fixed two-decimal values, and validate the manifest checksums before import.
+
+## Simulated CRM confirmation
+
+The guided flow can compare every approved create or update with the supplied `crm-post-import.csv` snapshot. It records matches, field mismatches, duplicate keys, and cases that cannot be verified because snapshot coverage is incomplete. The comparison reads only the exported gift fields and persists the snapshot checksum and per-action evidence. It never calls or writes to an external CRM, and a match does not prove that an external import ran.
 
 ## Current limits
 

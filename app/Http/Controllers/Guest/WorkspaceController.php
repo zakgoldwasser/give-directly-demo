@@ -51,6 +51,11 @@ class WorkspaceController extends Controller
 
         $reviewOptions = $this->reviews->options($workspace, $reconciliationRun);
         $imports = $workspace->importBatches()->with('mappingProfile')->get()->keyBy('report_type');
+        $exportBatch = $reconciliationRun?->exportBatches()->orderByDesc('generated_at')->first();
+        $confirmationBatch = $exportBatch?->confirmations()
+            ->with(['results' => fn ($query) => $query->orderBy('transaction_id')])
+            ->orderByDesc('completed_at')
+            ->first();
 
         return view('public.try', [
             'workspace' => $workspace,
@@ -67,7 +72,8 @@ class WorkspaceController extends Controller
             'reconciliationRun' => $reconciliationRun,
             'reviewOptions' => $reviewOptions,
             'approvalPreview' => $this->approvals->preview($workspace, $reconciliationRun),
-            'exportBatch' => $reconciliationRun?->exportBatches()->orderByDesc('generated_at')->first(),
+            'exportBatch' => $exportBatch,
+            'confirmationBatch' => $confirmationBatch,
             'exportProfileVersion' => ExportService::PROFILE_VERSION,
             'crmSnapshotGeneratedAt' => $imports->get('crm')?->context['generated_at'] ?? null,
             'fixtureReports' => $this->fixtures->reports(),

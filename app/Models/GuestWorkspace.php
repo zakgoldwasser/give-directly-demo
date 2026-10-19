@@ -117,4 +117,12 @@ class GuestWorkspace extends Model
     {
         return $this->hasMany(ExportBatch::class);
     }
+
+    /**
+     * @return HasMany<ConfirmationBatch, $this>
+     */
+    public function confirmationBatches(): HasMany
+    {
+        return $this->hasMany(ConfirmationBatch::class);
+    }
 }

@@ -21,7 +21,9 @@ class ExportDownloadController extends Controller
 
         if ($export->downloaded_at === null) {
             $export->forceFill([
-                'status' => ExportBatch::STATUS_DOWNLOADED,
+                'status' => $export->status === ExportBatch::STATUS_CHECKED
+                    ? ExportBatch::STATUS_CHECKED
+                    : ExportBatch::STATUS_DOWNLOADED,
                 'downloaded_at' => now(),
             ])->save();
         }
