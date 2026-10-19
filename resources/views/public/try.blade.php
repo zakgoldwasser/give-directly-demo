@@ -48,6 +48,54 @@
         </dl>
     @endif
 
+    @if ($reconciliationRun)
+        <section class="mt-8 rounded-xl border border-stone-200 bg-white p-6" aria-labelledby="reconciliation-summary-heading">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <p class="text-sm font-medium uppercase tracking-wide text-emerald-700">Current automated assessment</p>
+                    <h2 id="reconciliation-summary-heading" class="mt-1 text-xl font-semibold text-stone-900">Reconciliation outcomes</h2>
+                </div>
+                <p class="text-xs text-stone-500">Rule {{ $reconciliationRun->rule_version }} · {{ $reconciliationRun->completed_at?->format('j M Y, H:i T') }}</p>
+            </div>
+            <p class="mt-3 text-sm text-stone-600">These results use exact identifiers and conservative payout rules. Candidate matches and unmapped campaigns stay held until reviewed.</p>
+
+            @php
+                $outcomeLabels = [
+                    'create' => 'Proposed creates',
+                    'update' => 'Proposed updates',
+                    'unchanged' => 'Unchanged gifts',
+                    'held' => 'Held gifts',
+                ];
+            @endphp
+            <dl class="mt-5 grid gap-3 sm:grid-cols-4">
+                @foreach ($outcomeLabels as $outcome => $label)
+                    <div class="rounded-lg bg-stone-50 p-4">
+                        <dt class="text-xs text-stone-500">{{ $label }}</dt>
+                        <dd class="mt-1 text-2xl font-semibold text-stone-900">{{ number_format((int) ($reconciliationRun->outcome_counts[$outcome] ?? 0)) }}</dd>
+                    </div>
+                @endforeach
+            </dl>
+
+            <div class="mt-6">
+                <h3 class="text-sm font-semibold text-stone-900">Payout checks</h3>
+                <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                    @foreach ($reconciliationRun->payouts as $payout)
+                        <article class="rounded-lg border border-stone-200 p-4 text-sm">
+                            <div class="flex items-center justify-between gap-3">
+                                <h4 class="font-medium text-stone-900">{{ $payout->payout_id }}</h4>
+                                <span class="rounded-full bg-stone-100 px-2 py-1 text-xs text-stone-700">{{ str_replace('_', ' ', $payout->state) }}</span>
+                            </div>
+                            <p class="mt-2 text-stone-600">{{ $payout->currency }} {{ number_format($payout->component_total_minor / 100, 2) }} from {{ number_format($payout->component_count) }} components</p>
+                            @if ($payout->difference_minor !== null)
+                                <p class="mt-1 text-xs text-stone-500">Difference: {{ $payout->currency }} {{ number_format($payout->difference_minor / 100, 2) }}</p>
+                            @endif
+                        </article>
+                    @endforeach
+                </div>
+            </div>
+        </section>
+    @endif
+
     @if ($errors->any())
         <div class="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="alert">
             {{ $errors->first() }}

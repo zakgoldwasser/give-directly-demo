@@ -39,6 +39,10 @@ class WorkspaceController extends Controller
     {
         /** @var GuestWorkspace $workspace */
         $workspace = $request->attributes->get('guest_workspace');
+        $reconciliationRun = $workspace->reconciliationRuns()
+            ->with(['payouts' => fn ($query) => $query->orderBy('payout_id')])
+            ->orderByDesc('sequence')
+            ->first();
 
         return view('public.try', [
             'workspace' => $workspace,
@@ -52,6 +56,7 @@ class WorkspaceController extends Controller
                 ->selectRaw('record_type, count(*) as aggregate')
                 ->groupBy('record_type')
                 ->pluck('aggregate', 'record_type'),
+            'reconciliationRun' => $reconciliationRun,
             'fixtureReports' => $this->fixtures->reports(),
             'maxCsvSizeMb' => round(((int) config('reconciliation.max_csv_size_bytes')) / 1024 / 1024, 1),
             'maxDataRows' => (int) config('reconciliation.max_data_rows'),

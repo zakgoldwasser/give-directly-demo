@@ -21,6 +21,13 @@ return [
 
     'reference_fixture_manifest' => resource_path('fixtures/reference-v1/manifest.json'),
 
+    'rule_version' => 'demo_v1',
+
+    'campaign_mappings' => [
+        'GENERAL' => 'CAMPAIGN-GENERAL',
+        'EMERGENCY' => 'CAMPAIGN-EMERGENCY',
+    ],
+
     'github_url' => filled(env('RECONCILIATION_GITHUB_URL'))
         ? env('RECONCILIATION_GITHUB_URL')
         : '#',

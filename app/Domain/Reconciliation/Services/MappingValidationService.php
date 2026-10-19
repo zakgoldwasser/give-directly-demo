@@ -17,6 +17,7 @@ class MappingValidationService
     public function __construct(
         private readonly CanonicalReportSchema $schemas,
         private readonly CanonicalRecordMaterializer $materializer,
+        private readonly ReconciliationService $reconciliation,
     ) {}
 
     public function initialize(ImportBatch $batch): ImportBatch
@@ -181,7 +182,9 @@ class MappingValidationService
         });
 
         $batch = $batch->refresh()->load('mappingProfile');
-        $this->materializer->rebuildWorkspace($batch->workspace()->firstOrFail());
+        $workspace = $batch->workspace()->firstOrFail();
+        $this->materializer->rebuildWorkspace($workspace);
+        $this->reconciliation->runCurrentIfReady($workspace);
 
         return $batch->refresh()->load('mappingProfile');
     }

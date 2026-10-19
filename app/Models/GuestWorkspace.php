@@ -85,4 +85,12 @@ class GuestWorkspace extends Model
     {
         return $this->hasMany(CanonicalRecord::class);
     }
+
+    /**
+     * @return HasMany<ReconciliationRun, $this>
+     */
+    public function reconciliationRuns(): HasMany
+    {
+        return $this->hasMany(ReconciliationRun::class);
+    }
 }
