@@ -9,6 +9,24 @@ use Tests\TestCase;
 
 class CsvParserServiceTest extends TestCase
 {
+    public function test_it_parses_a_non_local_read_stream(): void
+    {
+        $stream = fopen('php://temp', 'w+b');
+        $this->assertIsResource($stream);
+
+        fwrite($stream, "transaction_id,amount\nD001,10.00\n");
+        rewind($stream);
+
+        try {
+            $parsed = app(CsvParserService::class)->parseStream($stream);
+        } finally {
+            fclose($stream);
+        }
+
+        $this->assertSame(1, $parsed['total_rows']);
+        $this->assertSame('D001', $parsed['rows'][0]['transaction_id']);
+    }
+
     private CsvParserService $parser;
 
     private string $tempDir;

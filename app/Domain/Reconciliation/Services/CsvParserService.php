@@ -7,6 +7,51 @@ use App\Domain\Reconciliation\Exceptions\CsvParseException;
 class CsvParserService
 {
     /**
+     * Parse CSV data from an arbitrary readable stream.
+     *
+     * The stream is copied into a bounded, seekable temporary stream because
+     * delimiter detection and quote validation require rewinding. This keeps
+     * object-storage imports independent of a local filesystem path.
+     *
+     * @param  resource  $stream
+     * @return array{headers: list<string>, rows: list<array<string, string>>, delimiter: string, total_rows: int}
+     *
+     * @throws CsvParseException
+     */
+    public function parseStream($stream): array
+    {
+        if (! is_resource($stream)) {
+            throw new CsvParseException('FILE_UNREADABLE', 'The uploaded file could not be read.');
+        }
+
+        $temporary = tmpfile();
+
+        if ($temporary === false) {
+            throw new CsvParseException('FILE_UNREADABLE', 'The uploaded file could not be read.');
+        }
+
+        try {
+            $maxBytes = (int) config('reconciliation.max_csv_size_bytes');
+            $copied = stream_copy_to_stream($stream, $temporary, $maxBytes + 1);
+
+            if ($copied === false) {
+                throw new CsvParseException('FILE_UNREADABLE', 'The uploaded file could not be read.');
+            }
+
+            $metadata = stream_get_meta_data($temporary);
+            $path = $metadata['uri'] ?? null;
+
+            if (! is_string($path)) {
+                throw new CsvParseException('FILE_UNREADABLE', 'The uploaded file could not be read.');
+            }
+
+            return $this->parse($path);
+        } finally {
+            fclose($temporary);
+        }
+    }
+
+    /**
      * Parse a CSV file into headers and associative row arrays.
      *
      * @return array{headers: list<string>, rows: list<array<string, string>>, delimiter: string, total_rows: int}

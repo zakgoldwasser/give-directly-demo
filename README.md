@@ -83,6 +83,53 @@ Laravel's public `/up` route reports basic application health. The `/ready` rout
 
 Production must use external PostgreSQL, database-backed sessions and cache, and S3-compatible private object storage. Set `RECONCILIATION_STORAGE_DRIVER=s3`, the `AWS_*` connection values, distinct `RECONCILIATION_IMPORTS_ROOT` and `RECONCILIATION_EXPORTS_ROOT` prefixes, `APP_KEY`, `CRON_SECRET`, and `RECONCILIATION_READINESS_SECRET` in Vercel. When Vercel's server-side runtime flag is present, the limiter uses Vercel's edge-overwritten client-IP header; other environments use the socket IP. Run `php artisan migrate --force` as a release step; migrations are intentionally not run when a container starts.
 
+## Deployment acceptance
+
+Run the production preflight inside the release container after migrations:
+
+```sh
+php artisan reconciliation:verify-deployment
+```
+
+It fails unless the application is in production mode with debug disabled, PostgreSQL and encrypted connections configured, database-backed sessions and cache, synchronous request work, secure cookies, current migrations, strong operational secrets, and working private object storage. `--json` produces machine-readable output. A local container rehearsal may use `--allow-local`; that exception must not be used as a production release gate.
+
+The deterministic synthetic benchmark contains 1,000 total rows across donations, payouts, and CRM data. Run the required 30 warm reconciliation samples against PostgreSQL with:
+
+```sh
+php artisan reconciliation:benchmark --runs=30 --json
+```
+
+The command reports min, median, p95, max, and peak PHP memory, fails at a p95 of 5 seconds or more, removes its temporary workspace, and refuses to run in production.
+
+Measured locally on 19 October 2026 in the Docker PHP 8.4 application container with PostgreSQL 18: 30 warm runs produced 596.88 ms minimum, 639.08 ms median, 788.03 ms p95, 1,032.32 ms maximum, and 58.5 MiB peak PHP memory. This synthetic local result passes the 5-second warm reconciliation target; it is not a Vercel measurement.
+
+The HTTP acceptance script completes the guided review and export, records warm landing and guided-start timings, and saves a session checkpoint plus the exported ZIP checksum. Run `prepare`, deploy a new version without changing the database, object-store prefixes, or `APP_KEY`, then run `verify` to prove that the workspace and exact private export survived container replacement:
+
+```sh
+DEPLOYMENT_URL=https://example.vercel.app \
+RECONCILIATION_READINESS_SECRET=replace-me \
+node scripts/deployment-acceptance.mjs prepare
+
+# Deploy the new release, then run:
+DEPLOYMENT_URL=https://example.vercel.app \
+RECONCILIATION_READINESS_SECRET=replace-me \
+node scripts/deployment-acceptance.mjs verify
+```
+
+The checkpoint contains a live anonymous session cookie and is ignored by Git. Delete `.deployment-acceptance` when verification is complete. Independently cold starts still require platform-level sampling; record five results with region and release metadata before public launch.
+
+On Windows, the complete isolated local rehearsal is one command:
+
+```powershell
+.\scripts\local-deployment-rehearsal.ps1
+```
+
+It builds `Dockerfile.vercel`, creates a temporary PostgreSQL database and persistent private-storage volume, runs migrations and the release preflight, performs the prepare phase, replaces the request container, performs the verify phase, and removes its temporary database, volume, secrets, and checkpoint.
+
+The local production-image rehearsal on 19 October 2026 passed all 19 preflight checks, measured a 50.06 ms warm landing p95 over 30 samples and a 684.04 ms guided-start request, then verified the same 4,038-byte export with checksum `ec0b9b68e6c4433916f794087e5906fbbae7319afaed5d2a51f2c71675761578` after replacing the request container. These are local Docker measurements; Vercel cold-start and regional measurements remain a production release gate.
+
+For rollback, redeploy the previous immutable image while retaining the current `APP_KEY`, database, and object-store prefixes. Apply only backward-compatible migrations before the acceptance check. If a release needs a destructive schema change, take a database backup and prepare an explicit reverse migration before deployment. Disable new workspaces with `RECONCILIATION_NEW_WORKSPACES_ENABLED=false` while recovering, then rerun the preflight, `/ready`, and the saved persistence verification before reopening the demo.
+
 ## Current limits
 
 | Setting | Default |

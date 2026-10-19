@@ -120,7 +120,18 @@ class ImportService
         ])->save();
 
         try {
-            $parsed = $this->parser->parse(Storage::disk('imports')->path($batch->private_file_path));
+            $stream = Storage::disk('imports')->readStream($batch->private_file_path);
+
+            if ($stream === false) {
+                throw new CsvParseException('FILE_UNREADABLE', 'The uploaded file could not be read.');
+            }
+
+            try {
+                $parsed = $this->parser->parseStream($stream);
+            } finally {
+                fclose($stream);
+            }
+
             $this->deadline->checkpoint();
 
             DB::transaction(function () use ($batch, $parsed): void {
