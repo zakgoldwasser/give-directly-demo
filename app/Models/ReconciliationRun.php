@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ReconciliationRun extends Model
 {
@@ -65,5 +66,10 @@ class ReconciliationRun extends Model
     public function exportBatches(): HasMany
     {
         return $this->hasMany(ExportBatch::class);
+    }
+
+    public function verificationConfirmation(): HasOne
+    {
+        return $this->hasOne(ConfirmationBatch::class, 'verification_reconciliation_run_id');
     }
 }

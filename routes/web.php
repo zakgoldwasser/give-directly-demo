@@ -12,6 +12,7 @@ use App\Http\Controllers\Guest\MappingController;
 use App\Http\Controllers\Guest\MatchReviewController;
 use App\Http\Controllers\Guest\PageController;
 use App\Http\Controllers\Guest\PostImportVerificationController;
+use App\Http\Controllers\Guest\RunHistoryController;
 use App\Http\Controllers\Guest\WorkspaceController;
 use App\Http\Middleware\EnsureGuestWorkspace;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,8 @@ Route::get('/fixtures/reference/{reportType}', FixtureController::class)->name('
 
 Route::middleware(EnsureGuestWorkspace::class)->group(function () {
     Route::get('/try', [WorkspaceController::class, 'show'])->name('try.show');
+    Route::get('/try/history', [RunHistoryController::class, 'index'])->name('try.history.index');
+    Route::get('/try/history/runs/{run}', [RunHistoryController::class, 'show'])->name('try.history.runs.show');
     Route::post('/try/reset', [WorkspaceController::class, 'reset'])->name('try.reset');
 
     Route::post('/try/imports', [ImportController::class, 'store'])->name('try.imports.store');

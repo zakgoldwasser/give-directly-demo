@@ -66,11 +66,6 @@ class WorkspaceController extends Controller
             && collect($expectedConfirmationCounts)->every(
                 fn (int $count, string $outcome): bool => ($confirmationBatch->counts[$outcome] ?? null) === $count,
             );
-        $expectedConfirmationCounts = $this->fixtures->confirmationSnapshot()['expected'];
-        $verificationEligible = $confirmationBatch !== null
-            && collect($expectedConfirmationCounts)->every(
-                fn (int $count, string $outcome): bool => ($confirmationBatch->counts[$outcome] ?? null) === $count,
-            );
 
         return view('public.try', [
             'workspace' => $workspace,
@@ -89,7 +84,6 @@ class WorkspaceController extends Controller
             'approvalPreview' => $this->approvals->preview($workspace, $reconciliationRun),
             'exportBatch' => $exportBatch,
             'confirmationBatch' => $confirmationBatch,
-            'verificationEligible' => $verificationEligible,
             'verificationEligible' => $verificationEligible,
             'exportProfileVersion' => ExportService::PROFILE_VERSION,
             'crmSnapshotGeneratedAt' => $imports->get('crm')?->context['generated_at'] ?? null,

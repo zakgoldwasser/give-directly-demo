@@ -90,6 +90,7 @@ class ImportController extends Controller
             ImportBatch::STATUS_MAPPING_REQUIRED,
             ImportBatch::STATUS_VALIDATED,
             ImportBatch::STATUS_VALIDATION_FAILED,
+            ImportBatch::STATUS_SUPERSEDED,
         ], true)) {
             $previewRows = $batch->rows()
                 ->orderBy('row_number')

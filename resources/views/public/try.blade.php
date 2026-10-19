@@ -10,10 +10,15 @@
             <h1 class="mt-2 text-3xl font-semibold tracking-tight text-stone-900">Reconciliation workspace</h1>
             <p class="mt-3 max-w-2xl text-stone-600">Load the donation, payout, and CRM reports that make up one frozen reconciliation run.</p>
         </div>
-        <form method="POST" action="{{ route('try.reset') }}">
-            @csrf
-            <button class="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50">Reset workspace</button>
-        </form>
+        <div class="flex flex-wrap gap-3">
+            @if ($reconciliationRun)
+                <a class="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50" href="{{ route('try.history.index') }}">View run history</a>
+            @endif
+            <form method="POST" action="{{ route('try.reset') }}">
+                @csrf
+                <button class="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50">Reset workspace</button>
+            </form>
+        </div>
     </div>
 
     <dl class="mt-8 grid gap-4 rounded-xl border border-stone-200 bg-white p-5 text-sm sm:grid-cols-3">

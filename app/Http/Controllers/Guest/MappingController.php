@@ -27,6 +27,8 @@ class MappingController extends Controller
             ->whereKey($import)
             ->firstOrFail();
 
+        abort_if($batch->status === ImportBatch::STATUS_SUPERSEDED, 409);
+
         $validated = $request->validate([
             'mapping' => ['required', 'array'],
             'mapping.*' => ['nullable', 'string', 'max:4096'],

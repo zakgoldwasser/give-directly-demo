@@ -70,6 +70,10 @@
                 {{ number_format($batch->conflicting_rows) }} source row participates in a blocking version conflict.
             @endif
         </div>
+    @elseif ($batch->status === \App\Models\ImportBatch::STATUS_SUPERSEDED)
+        <div class="mt-6 rounded-lg border border-stone-300 bg-stone-100 p-4 text-sm text-stone-800" role="status">
+            This import was superseded by a later CRM snapshot. Its source rows, mapping, and materialization evidence remain available as read-only history.
+        </div>
     @elseif ($batch->status === \App\Models\ImportBatch::STATUS_VALIDATION_FAILED)
         <div class="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="alert">
             {{ number_format($batch->rejected_rows) }} of {{ number_format($batch->total_rows) }} rows have blocking validation errors. Invalid rows remain visible but cannot enter reconciliation.
@@ -91,7 +95,7 @@
         </div>
     @endif
 
-    @if ($batch->status !== \App\Models\ImportBatch::STATUS_FAILED)
+    @if (! in_array($batch->status, [\App\Models\ImportBatch::STATUS_FAILED, \App\Models\ImportBatch::STATUS_SUPERSEDED], true))
         <details class="mt-6 rounded-xl border border-stone-200 bg-white p-5" @if ($batch->status === \App\Models\ImportBatch::STATUS_MAPPING_REQUIRED) open @endif>
             <summary class="cursor-pointer font-semibold text-stone-900">Column mapping</summary>
             <p class="mt-2 text-sm text-stone-600">Each canonical field is mapped by header name. Saving creates an immutable mapping version and reruns validation.</p>

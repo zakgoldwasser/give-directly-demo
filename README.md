@@ -61,6 +61,8 @@ The guided flow can compare every approved create or update with the supplied `c
 
 After confirmation, the guided flow can promote that immutable snapshot to the active CRM baseline and run the existing reconciliation engine again with the recorded review decisions. The reference result is 0 creates, 0 updates, 8 unchanged gifts, and the same 4 held gifts. The original CRM import and every earlier run remain available as historical evidence.
 
+The workspace run history presents that evidence as a read-only timeline. Each run detail links its source checksums and mapping profiles to review decisions, gift and payout outcomes, approvals, export packages, snapshot confirmations, and any later verification run.
+
 ## Current limits
 
 | Setting | Default |
