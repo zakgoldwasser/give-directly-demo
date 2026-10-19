@@ -22,39 +22,43 @@ Route::get('/', LandingController::class)->name('landing');
 Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
 Route::get('/about', [PageController::class, 'about'])->name('about');
 
-Route::post('/try/start', [WorkspaceController::class, 'start'])->name('try.start');
+Route::post('/try/start', [WorkspaceController::class, 'start'])
+    ->middleware(['new.workspaces', 'throttle:workspace-starts'])
+    ->name('try.start');
 Route::get('/fixtures/reference/{reportType}', FixtureController::class)->name('reference-fixtures.download');
 
 Route::middleware(EnsureGuestWorkspace::class)->group(function () {
     Route::get('/try', [WorkspaceController::class, 'show'])->name('try.show');
     Route::get('/try/history', [RunHistoryController::class, 'index'])->name('try.history.index');
     Route::get('/try/history/runs/{run}', [RunHistoryController::class, 'show'])->name('try.history.runs.show');
-    Route::post('/try/reset', [WorkspaceController::class, 'reset'])->name('try.reset');
+    Route::post('/try/reset', [WorkspaceController::class, 'reset'])
+        ->middleware(['new.workspaces', 'throttle:workspace-starts'])
+        ->name('try.reset');
 
     Route::post('/try/imports', [ImportController::class, 'store'])
-        ->middleware('bounded.operation:import')
+        ->middleware(['throttle:workspace-work', 'bounded.operation:import'])
         ->name('try.imports.store');
     Route::get('/try/imports/{import}', [ImportController::class, 'show'])->name('try.imports.show');
     Route::post('/try/imports/{import}/mapping', MappingController::class)
-        ->middleware('bounded.operation:reconciliation')
+        ->middleware(['throttle:workspace-work', 'bounded.operation:reconciliation'])
         ->name('try.imports.mapping.store');
     Route::post('/try/review/campaigns', CampaignReviewController::class)
-        ->middleware('bounded.operation:reconciliation')
+        ->middleware(['throttle:workspace-work', 'bounded.operation:reconciliation'])
         ->name('try.review.campaigns.store');
     Route::post('/try/review/matches', MatchReviewController::class)
-        ->middleware('bounded.operation:reconciliation')
+        ->middleware(['throttle:workspace-work', 'bounded.operation:reconciliation'])
         ->name('try.review.matches.store');
     Route::post('/try/approvals', ApprovalController::class)
-        ->middleware('bounded.operation:approval')
+        ->middleware(['throttle:workspace-work', 'bounded.operation:approval'])
         ->name('try.approvals.store');
     Route::post('/try/exports', ExportController::class)
-        ->middleware('bounded.operation:export')
+        ->middleware(['throttle:workspace-work', 'bounded.operation:export'])
         ->name('try.exports.store');
     Route::get('/try/exports/{export}/download', ExportDownloadController::class)->name('try.exports.download');
     Route::post('/try/exports/{export}/confirm', ConfirmationController::class)
-        ->middleware('bounded.operation:confirmation')
+        ->middleware(['throttle:workspace-work', 'bounded.operation:confirmation'])
         ->name('try.exports.confirm');
     Route::post('/try/confirmations/{confirmation}/verify', PostImportVerificationController::class)
-        ->middleware('bounded.operation:verification')
+        ->middleware(['throttle:workspace-work', 'bounded.operation:verification'])
         ->name('try.confirmations.verify');
 });

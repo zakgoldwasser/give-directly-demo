@@ -17,6 +17,26 @@ return [
 
     'operation_lease_seconds' => (int) env('RECONCILIATION_OPERATION_LEASE_SECONDS', 60),
 
+    'new_workspaces_enabled' => (bool) env('RECONCILIATION_NEW_WORKSPACES_ENABLED', true),
+
+    'workspace_start_limits' => [
+        'per_session' => (int) env('RECONCILIATION_WORKSPACE_STARTS_PER_SESSION_PER_MINUTE', 5),
+        'per_ip' => (int) env('RECONCILIATION_WORKSPACE_STARTS_PER_IP_PER_MINUTE', 5),
+    ],
+
+    'workspace_work_limits' => [
+        'per_session' => (int) env('RECONCILIATION_WORK_PER_SESSION_PER_MINUTE', 10),
+        'per_ip' => (int) env('RECONCILIATION_WORK_PER_IP_PER_MINUTE', 10),
+    ],
+
+    'cleanup_batch_size' => (int) env('RECONCILIATION_CLEANUP_BATCH_SIZE', 100),
+
+    'cleanup_lock_seconds' => (int) env('RECONCILIATION_CLEANUP_LOCK_SECONDS', 120),
+
+    'readiness_secret' => env('RECONCILIATION_READINESS_SECRET'),
+
+    'cron_secret' => env('CRON_SECRET'),
+
     'max_absolute_money_minor_units' => (int) env('RECONCILIATION_MAX_ABSOLUTE_MONEY_MINOR_UNITS', 10_000_000_000),
 
     'allow_arbitrary_uploads' => (bool) env('RECONCILIATION_ALLOW_ARBITRARY_UPLOADS', false),

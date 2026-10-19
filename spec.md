@@ -38,6 +38,7 @@ Live Salesforce writes, real CAF adapters, bank-statement matching, multiple cur
 - Three files in a report set, 50 columns, and 4,096 characters per cell.
 - Bounded synchronous import, reconciliation, and export work.
 - A 20-second application deadline, 30-second function maximum, and 60-second operation lease.
+- Configurable per-session and per-IP limits, initially 5 workspace starts and 10 imports or runs per minute.
 - Workspaces expire after 24 hours; cleanup completes within the following 24 hours.
 - Public fixture checksums are verified before file contents are persisted.
 

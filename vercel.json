@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "app": {
+      "root": ".",
+      "entrypoint": "Dockerfile.vercel",
+      "runtime": "container",
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": { "service": "app" } }
+  ],
+  "crons": [
+    {
+      "path": "/internal/cron/workspaces/purge",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}

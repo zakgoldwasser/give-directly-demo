@@ -69,7 +69,19 @@ Every import, mapping, review, approval, export, confirmation, and verification 
 
 ## Workspace cleanup
 
-Expired guest workspaces and their private import and export directories are purged by the `workspaces:purge-expired` command. The command is idempotent and scheduled every 15 minutes; production must invoke Laravel's scheduler every minute. A workspace database record is retained when either private storage directory cannot be deleted so a later scheduler run can retry.
+Expired guest workspaces and their private import and export directories are purged by the `workspaces:purge-expired` command. Each invocation processes a configurable bounded batch and is safe to repeat. Docker Compose runs Laravel's scheduler, while Vercel Cron calls the bearer-protected `/internal/cron/workspaces/purge` endpoint every 15 minutes. A workspace database record is retained when either private storage directory cannot be deleted so a later sweep can retry.
+
+## Public release safeguards
+
+Workspace creation and reset requests are limited independently by browser session and IP address. Import, mapping, review, approval, export, confirmation, and verification mutations share a second per-session and per-IP limit. The defaults are 5 workspace starts and 10 work requests per minute. Set `RECONCILIATION_NEW_WORKSPACES_ENABLED=false` to stop creating temporary workspaces without taking the rest of the application offline.
+
+Laravel's public `/up` route reports basic application health. The `/ready` route verifies the database and both private storage disks, requires `Authorization: Bearer <RECONCILIATION_READINESS_SECRET>`, and fails closed when the secret is absent. The cleanup endpoint uses the same bearer pattern with `CRON_SECRET`; Vercel automatically sends that value to configured cron requests.
+
+## Vercel container deployment
+
+`Dockerfile.vercel` packages PHP 8.4, FrankenPHP, PostgreSQL support, locked Composer dependencies, and compiled frontend assets. `Caddyfile` exposes only `public`, and `vercel.json` routes traffic to the container, limits invocations to 30 seconds, and schedules the bounded cleanup sweep.
+
+Production must use external PostgreSQL, database-backed sessions and cache, and S3-compatible private object storage. Set `RECONCILIATION_STORAGE_DRIVER=s3`, the `AWS_*` connection values, distinct `RECONCILIATION_IMPORTS_ROOT` and `RECONCILIATION_EXPORTS_ROOT` prefixes, `APP_KEY`, `CRON_SECRET`, and `RECONCILIATION_READINESS_SECRET` in Vercel. When Vercel's server-side runtime flag is present, the limiter uses Vercel's edge-overwritten client-IP header; other environments use the socket IP. Run `php artisan migrate --force` as a release step; migrations are intentionally not run when a container starts.
 
 ## Current limits
 
@@ -83,6 +95,9 @@ Expired guest workspaces and their private import and export directories are pur
 | Workspace lifetime | 24 hours |
 | Processing deadline | 20 seconds |
 | Operation lease | 60 seconds |
+| Workspace starts | 5 per session and IP per minute |
+| Imports and runs | 10 per session and IP per minute |
+| Cleanup sweep | 100 workspaces per invocation |
 
 Configuration lives in `config/reconciliation.php` and uses the `RECONCILIATION_*` environment variables documented in `.env.example`.
 

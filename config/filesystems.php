@@ -39,16 +39,32 @@ return [
         ],
 
         'imports' => [
-            'driver' => 'local',
-            'root' => storage_path('app/private/imports'),
+            'driver' => env('RECONCILIATION_STORAGE_DRIVER', 'local'),
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('AWS_BUCKET'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'root' => env('RECONCILIATION_STORAGE_DRIVER', 'local') === 'local'
+                ? storage_path('app/private/imports')
+                : env('RECONCILIATION_IMPORTS_ROOT', 'reconciliation/imports'),
             'visibility' => 'private',
             'throw' => false,
             'report' => false,
         ],
 
         'exports' => [
-            'driver' => 'local',
-            'root' => storage_path('app/private/exports'),
+            'driver' => env('RECONCILIATION_STORAGE_DRIVER', 'local'),
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('AWS_BUCKET'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'root' => env('RECONCILIATION_STORAGE_DRIVER', 'local') === 'local'
+                ? storage_path('app/private/exports')
+                : env('RECONCILIATION_EXPORTS_ROOT', 'reconciliation/exports'),
             'visibility' => 'private',
             'throw' => false,
             'report' => false,
