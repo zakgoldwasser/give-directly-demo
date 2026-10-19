@@ -182,7 +182,7 @@ class PublicReleaseHardeningTest extends TestCase
             flags: JSON_THROW_ON_ERROR,
         );
 
-        $this->assertSame(30, $configuration['services']['app']['maxDuration']);
+        $this->assertSame(30, $configuration['services']['app']['functions']['/*']['maxDuration']);
         $this->assertSame('container', $configuration['services']['app']['runtime']);
         $this->assertSame('Dockerfile.vercel', $configuration['services']['app']['entrypoint']);
         $this->assertContains([

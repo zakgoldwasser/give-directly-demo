@@ -5,7 +5,9 @@
       "root": ".",
       "entrypoint": "Dockerfile.vercel",
       "runtime": "container",
-      "maxDuration": 30
+      "functions": {
+        "/*": { "maxDuration": 30 }
+      }
     }
   },
   "rewrites": [
