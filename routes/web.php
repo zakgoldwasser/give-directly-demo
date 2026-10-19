@@ -31,15 +31,30 @@ Route::middleware(EnsureGuestWorkspace::class)->group(function () {
     Route::get('/try/history/runs/{run}', [RunHistoryController::class, 'show'])->name('try.history.runs.show');
     Route::post('/try/reset', [WorkspaceController::class, 'reset'])->name('try.reset');
 
-    Route::post('/try/imports', [ImportController::class, 'store'])->name('try.imports.store');
+    Route::post('/try/imports', [ImportController::class, 'store'])
+        ->middleware('bounded.operation:import')
+        ->name('try.imports.store');
     Route::get('/try/imports/{import}', [ImportController::class, 'show'])->name('try.imports.show');
-    Route::post('/try/imports/{import}/mapping', MappingController::class)->name('try.imports.mapping.store');
-    Route::post('/try/review/campaigns', CampaignReviewController::class)->name('try.review.campaigns.store');
-    Route::post('/try/review/matches', MatchReviewController::class)->name('try.review.matches.store');
-    Route::post('/try/approvals', ApprovalController::class)->name('try.approvals.store');
-    Route::post('/try/exports', ExportController::class)->name('try.exports.store');
+    Route::post('/try/imports/{import}/mapping', MappingController::class)
+        ->middleware('bounded.operation:reconciliation')
+        ->name('try.imports.mapping.store');
+    Route::post('/try/review/campaigns', CampaignReviewController::class)
+        ->middleware('bounded.operation:reconciliation')
+        ->name('try.review.campaigns.store');
+    Route::post('/try/review/matches', MatchReviewController::class)
+        ->middleware('bounded.operation:reconciliation')
+        ->name('try.review.matches.store');
+    Route::post('/try/approvals', ApprovalController::class)
+        ->middleware('bounded.operation:approval')
+        ->name('try.approvals.store');
+    Route::post('/try/exports', ExportController::class)
+        ->middleware('bounded.operation:export')
+        ->name('try.exports.store');
     Route::get('/try/exports/{export}/download', ExportDownloadController::class)->name('try.exports.download');
-    Route::post('/try/exports/{export}/confirm', ConfirmationController::class)->name('try.exports.confirm');
+    Route::post('/try/exports/{export}/confirm', ConfirmationController::class)
+        ->middleware('bounded.operation:confirmation')
+        ->name('try.exports.confirm');
     Route::post('/try/confirmations/{confirmation}/verify', PostImportVerificationController::class)
+        ->middleware('bounded.operation:verification')
         ->name('try.confirmations.verify');
 });

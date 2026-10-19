@@ -9,6 +9,8 @@ use App\Domain\Reconciliation\Services\ReviewDecisionService;
 use App\Http\Controllers\Controller;
 use App\Models\CanonicalRecord;
 use App\Models\GuestWorkspace;
+use App\Models\WorkspaceOperation;
+use App\Services\Operations\WorkspaceOperationService;
 use App\Services\ReferenceScenarioService;
 use App\Services\WorkspaceService;
 use Illuminate\Http\RedirectResponse;
@@ -23,6 +25,7 @@ class WorkspaceController extends Controller
         private readonly ReferenceFixtureCatalog $fixtures,
         private readonly ReviewDecisionService $reviews,
         private readonly ApprovalService $approvals,
+        private readonly WorkspaceOperationService $operations,
     ) {}
 
     public function start(Request $request): RedirectResponse
@@ -44,6 +47,12 @@ class WorkspaceController extends Controller
     {
         /** @var GuestWorkspace $workspace */
         $workspace = $request->attributes->get('guest_workspace');
+        $this->operations->expireStale($workspace);
+        $latestOperation = $workspace->operations()->orderByDesc('started_at')->first();
+        $recoverableOperation = $latestOperation?->status === WorkspaceOperation::STATUS_FAILED
+            && in_array($latestOperation->error_code, ['LEASE_EXPIRED', 'DEADLINE_EXCEEDED', 'PROCESSING_FAILED'], true)
+                ? $latestOperation
+                : null;
         $reconciliationRun = $workspace->reconciliationRuns()
             ->with(['payouts' => fn ($query) => $query->orderBy('payout_id')])
             ->orderByDesc('sequence')
@@ -69,6 +78,7 @@ class WorkspaceController extends Controller
 
         return view('public.try', [
             'workspace' => $workspace,
+            'recoverableOperation' => $recoverableOperation,
             'intent' => $this->workspaces->intent(),
             'imports' => $imports,
             'canonicalCounts' => $workspace->canonicalRecords()

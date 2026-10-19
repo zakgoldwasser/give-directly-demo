@@ -6,6 +6,7 @@ use App\Models\ConfirmationBatch;
 use App\Models\ConfirmationResult;
 use App\Models\ExportBatch;
 use App\Models\GuestWorkspace;
+use App\Services\Operations\ProcessingDeadline;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -29,16 +30,19 @@ class ConfirmationService
         private readonly ReferenceFixtureCatalog $fixtures,
         private readonly CsvParserService $csv,
         private readonly ConfirmationComparator $comparator,
+        private readonly ProcessingDeadline $deadline,
     ) {}
 
     public function confirm(GuestWorkspace $workspace, ExportBatch $export): ConfirmationBatch
     {
+        $this->deadline->checkpoint();
         if ($export->guest_workspace_id !== $workspace->id) {
             abort(404);
         }
 
         $snapshot = $this->fixtures->confirmationSnapshot();
         $parsed = $this->csv->parse($this->fixtures->confirmationSnapshotPath());
+        $this->deadline->checkpoint();
         $this->validateSnapshot($parsed, $snapshot);
         $records = array_map($this->normalizeRecord(...), $parsed['rows']);
         $checksum = (string) $snapshot['sha256'];
@@ -81,6 +85,7 @@ class ConfirmationService
             $approvals = $lockedExport->run->approvals()->orderBy('transaction_id')->get();
 
             foreach ($approvals as $approval) {
+                $this->deadline->checkpoint();
                 $comparison = $this->comparator->compare(
                     $approval,
                     $records,
@@ -100,6 +105,8 @@ class ConfirmationService
                 'status' => ExportBatch::STATUS_CHECKED,
                 'checked_at' => $snapshotGeneratedAt,
             ])->save();
+
+            $this->deadline->checkpoint();
 
             return $batch->load(['results' => fn ($query) => $query->orderBy('transaction_id')]);
         });

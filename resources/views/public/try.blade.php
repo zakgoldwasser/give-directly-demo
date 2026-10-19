@@ -89,6 +89,14 @@
         </div>
     @endif
 
+    @if ($recoverableOperation)
+        <div class="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950" role="alert">
+            <p class="font-medium">A {{ str_replace('_', ' ', $recoverableOperation->operation_type) }} operation did not finish.</p>
+            <p class="mt-1">No partial result was activated. Retry the action below when ready.</p>
+            <p class="mt-1 break-all text-xs text-amber-800">Trace ID: {{ $recoverableOperation->trace_id }}</p>
+        </div>
+    @endif
+
     @if ($reconciliationRun)
         <section class="mt-8 rounded-xl border border-stone-200 bg-white p-6" aria-labelledby="reconciliation-summary-heading">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -149,6 +157,7 @@
                     @foreach ($reviewOptions['campaigns'] as $campaign)
                         <form class="rounded-lg border border-amber-200 bg-white p-4" method="POST" action="{{ route('try.review.campaigns.store') }}">
                             @csrf
+                            <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                             <input type="hidden" name="campaign_code" value="{{ $campaign['campaign_code'] }}">
                             <div class="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
                                 <div>
@@ -173,6 +182,7 @@
                     @foreach ($reviewOptions['matches'] as $matchIndex => $match)
                         <form class="rounded-lg border border-amber-200 bg-white p-4" method="POST" action="{{ route('try.review.matches.store') }}">
                             @csrf
+                            <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                             <input type="hidden" name="transaction_id" value="{{ $match['transaction_id'] }}">
                             <fieldset>
                                 <legend class="font-medium text-stone-900">Gift {{ $match['transaction_id'] }}</legend>
@@ -261,6 +271,7 @@
                 @else
                     <form class="mt-5" method="POST" action="{{ route('try.approvals.store') }}">
                         @csrf
+                        <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                         <input type="hidden" name="run_id" value="{{ $reconciliationRun->id }}">
                         <button class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800" type="submit">Approve {{ $approvalPreview['eligible_count'] }} eligible changes</button>
                     </form>
@@ -268,6 +279,7 @@
             @elseif ($exportBatch === null)
                 <form class="mt-5" method="POST" action="{{ route('try.exports.store') }}">
                     @csrf
+                    <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                     <input type="hidden" name="run_id" value="{{ $reconciliationRun->id }}">
                     <button class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800" type="submit">Create reviewed export package</button>
                 </form>
@@ -285,6 +297,7 @@
                         <p class="mt-1 text-xs text-sky-800">The guided demo uses a fixed, complete post-import CRM snapshot and compares only the approved destination fields.</p>
                         <form class="mt-3" method="POST" action="{{ route('try.exports.confirm', $exportBatch) }}">
                             @csrf
+                            <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                             <button class="rounded-lg bg-sky-700 px-4 py-2 font-medium text-white hover:bg-sky-800" type="submit">Simulate CRM confirmation</button>
                         </form>
                     </div>
@@ -349,6 +362,7 @@
                         @if ($confirmationBatch->verification_reconciliation_run_id === null && $verificationEligible)
                             <form class="mt-3" method="POST" action="{{ route('try.confirmations.verify', $confirmationBatch) }}">
                                 @csrf
+                                <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                                 <button class="rounded-lg bg-sky-700 px-4 py-2 font-medium text-white hover:bg-sky-800" type="submit">Run post-import verification</button>
                             </form>
                         @endif
@@ -358,7 +372,7 @@
         </section>
     @endif
 
-    @if ($confirmationBatch?->verification_reconciliation_run_id === $reconciliationRun?->id)
+    @if ($confirmationBatch && $reconciliationRun && $confirmationBatch->verification_reconciliation_run_id === $reconciliationRun->id)
         <section class="mt-8 rounded-xl border border-emerald-200 bg-emerald-50 p-6" aria-labelledby="verification-heading">
             <p class="text-sm font-medium uppercase tracking-wide text-emerald-700">Post-import verification</p>
             <h2 id="verification-heading" class="mt-1 text-xl font-semibold text-stone-900">The confirmed snapshot is reconciled</h2>
@@ -421,6 +435,7 @@
                 @else
                     <form class="mt-5" method="POST" enctype="multipart/form-data" action="{{ route('try.imports.store') }}" data-upload-form data-upload-url="{{ route('try.imports.store') }}" data-max-bytes="{{ (int) config('reconciliation.max_csv_size_bytes') }}">
                         @csrf
+                        <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                         <input type="hidden" name="report_type" value="{{ $type }}">
                         <label class="block rounded-lg border border-dashed border-stone-300 p-4 text-center" data-drop-zone>
                             <span class="block text-sm font-medium text-stone-800">Choose CSV</span>

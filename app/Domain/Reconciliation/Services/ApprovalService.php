@@ -6,12 +6,17 @@ use App\Models\GiftReconciliation;
 use App\Models\GuestWorkspace;
 use App\Models\ReconciliationApproval;
 use App\Models\ReconciliationRun;
+use App\Services\Operations\ProcessingDeadline;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ApprovalService
 {
+    public function __construct(
+        private readonly ProcessingDeadline $deadline,
+    ) {}
+
     /**
      * @return array{eligible: list<array<string, mixed>>, eligible_count: int, approved_count: int, complete: bool}
      */
@@ -46,6 +51,8 @@ class ApprovalService
 
     public function approveEligible(GuestWorkspace $workspace, string $runId): int
     {
+        $this->deadline->checkpoint();
+
         return DB::transaction(function () use ($workspace, $runId): int {
             GuestWorkspace::query()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
             $run = $this->currentRun($workspace, $runId);
@@ -60,6 +67,7 @@ class ApprovalService
             $now = now();
 
             foreach ($eligible as $result) {
+                $this->deadline->checkpoint();
                 $version = $result->gift?->activeVersion;
 
                 ReconciliationApproval::query()->firstOrCreate(
@@ -87,6 +95,8 @@ class ApprovalService
                     ],
                 );
             }
+
+            $this->deadline->checkpoint();
 
             return $eligible->count();
         });

@@ -7,6 +7,7 @@ use App\Models\GuestWorkspace;
 use App\Models\ImportBatch;
 use App\Models\ReconciliationRun;
 use App\Services\ImportService;
+use App\Services\Operations\ProcessingDeadline;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -20,10 +21,12 @@ class PostImportVerificationService
         private readonly ReconciliationService $reconciliation,
         private readonly ReviewDecisionService $reviews,
         private readonly ReferenceFixtureCatalog $fixtures,
+        private readonly ProcessingDeadline $deadline,
     ) {}
 
     public function verify(GuestWorkspace $workspace, ConfirmationBatch $confirmation): ReconciliationRun
     {
+        $this->deadline->checkpoint();
         if ($confirmation->guest_workspace_id !== $workspace->id) {
             abort(404);
         }
@@ -52,14 +55,7 @@ class PostImportVerificationService
                 }
 
                 foreach ($snapshot['expected'] as $outcome => $count) {
-                    if (($locked->counts[$outcome] ?? null) !== $count) {
-                        throw ValidationException::withMessages([
-                            'verification' => 'Resolve every confirmation exception before promoting this snapshot.',
-                        ]);
-                    }
-                }
-
-                foreach ($snapshot['expected'] as $outcome => $count) {
+                    $this->deadline->checkpoint();
                     if (($locked->counts[$outcome] ?? null) !== $count) {
                         throw ValidationException::withMessages([
                             'verification' => 'Resolve every confirmation exception before promoting this snapshot.',
@@ -74,6 +70,7 @@ class PostImportVerificationService
 
                 $verificationImport = $this->imports->createFromConfirmationSnapshot($workspace, $locked);
                 $createdPath = $verificationImport->private_file_path;
+                $this->deadline->checkpoint();
                 $run = $this->reconciliation->run($workspace, $this->reviews->currentDecisions($workspace));
 
                 if ($run === null) {
@@ -83,6 +80,7 @@ class PostImportVerificationService
                 $expected = $snapshot['verification_outcomes'];
 
                 foreach ($expected as $outcome => $count) {
+                    $this->deadline->checkpoint();
                     if (($run->outcome_counts[$outcome] ?? null) !== $count) {
                         throw new RuntimeException('The post-import reconciliation did not match the reference outcome contract.');
                     }
@@ -95,6 +93,8 @@ class PostImportVerificationService
                     'verification_completed_at' => now(),
                     'status' => ConfirmationBatch::STATUS_VERIFIED,
                 ])->save();
+
+                $this->deadline->checkpoint();
 
                 return $run;
             });

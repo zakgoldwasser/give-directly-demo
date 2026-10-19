@@ -7,6 +7,7 @@ use App\Models\GiftReconciliation;
 use App\Models\GuestWorkspace;
 use App\Models\ReconciliationApproval;
 use App\Models\ReconciliationRun;
+use App\Services\Operations\ProcessingDeadline;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -20,8 +21,14 @@ class ExportService
 {
     public const PROFILE_VERSION = 'generic_gift_v1';
 
+    public function __construct(
+        private readonly ProcessingDeadline $deadline,
+    ) {}
+
     public function prepare(GuestWorkspace $workspace, string $runId): ExportBatch
     {
+        $this->deadline->checkpoint();
+
         return DB::transaction(function () use ($workspace, $runId): ExportBatch {
             GuestWorkspace::query()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
             $run = $workspace->reconciliationRuns()
@@ -61,6 +68,7 @@ class ExportService
             $batchId = (string) Str::uuid();
             $generatedAt = now()->utc();
             $files = $this->files($workspace, $run, $results, $approvals);
+            $this->deadline->checkpoint();
             $fileChecksums = collect($files)
                 ->map(fn (string $contents): string => hash('sha256', $contents))
                 ->all();
@@ -79,6 +87,7 @@ class ExportService
                 JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
             )."\n";
             $zipBytes = $this->zip($files);
+            $this->deadline->checkpoint();
             $privatePath = "{$workspace->id}/{$batchId}.zip";
 
             if (! Storage::disk('exports')->put($privatePath, $zipBytes)) {
@@ -101,7 +110,9 @@ class ExportService
             $batch->id = $batchId;
 
             try {
+                $this->deadline->checkpoint();
                 $batch->save();
+                $this->deadline->checkpoint();
             } catch (Throwable $exception) {
                 Storage::disk('exports')->delete($privatePath);
 

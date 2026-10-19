@@ -63,6 +63,10 @@ After confirmation, the guided flow can promote that immutable snapshot to the a
 
 The workspace run history presents that evidence as a read-only timeline. Each run detail links its source checksums and mapping profiles to review decisions, gift and payout outcomes, approvals, export packages, snapshot confirmations, and any later verification run.
 
+## Bounded operations
+
+Every import, mapping, review, approval, export, confirmation, and verification mutation records a pending, running, completed, or failed workspace operation. Browser forms and API clients can supply an idempotency key; completed requests replay their recorded response, changed input under the same key returns a conflict, and duplicate running work is rejected. Processing uses a 20-second cooperative deadline and a 60-second lease. Expired leases become retryable failures when the workspace is read, and timeout responses include a non-sensitive trace ID.
+
 ## Workspace cleanup
 
 Expired guest workspaces and their private import and export directories are purged by the `workspaces:purge-expired` command. The command is idempotent and scheduled every 15 minutes; production must invoke Laravel's scheduler every minute. A workspace database record is retained when either private storage directory cannot be deleted so a later scheduler run can retry.
@@ -78,6 +82,7 @@ Expired guest workspaces and their private import and export directories are pur
 | Active imports | 3 per workspace |
 | Workspace lifetime | 24 hours |
 | Processing deadline | 20 seconds |
+| Operation lease | 60 seconds |
 
 Configuration lives in `config/reconciliation.php` and uses the `RECONCILIATION_*` environment variables documented in `.env.example`.
 

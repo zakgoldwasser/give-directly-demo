@@ -101,6 +101,7 @@
             <p class="mt-2 text-sm text-stone-600">Each canonical field is mapped by header name. Saving creates an immutable mapping version and reruns validation.</p>
             <form class="mt-5 grid gap-4 sm:grid-cols-2" method="POST" action="{{ route('try.imports.mapping.store', $batch) }}">
                 @csrf
+                <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                 @foreach ($schemaFields as $canonicalField => $definition)
                     <label class="block text-sm">
                         <span class="font-medium text-stone-800">{{ $definition['label'] }}@if ($definition['required']) <span class="text-red-700">required</span>@endif</span>

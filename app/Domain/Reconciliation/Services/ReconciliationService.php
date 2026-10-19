@@ -8,6 +8,7 @@ use App\Models\GuestWorkspace;
 use App\Models\ImportBatch;
 use App\Models\PayoutReconciliation;
 use App\Models\ReconciliationRun;
+use App\Services\Operations\ProcessingDeadline;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ class ReconciliationService
     public function __construct(
         private readonly PayoutReconciler $payouts,
         private readonly MatchService $matches,
+        private readonly ProcessingDeadline $deadline,
     ) {}
 
     /**
@@ -25,6 +27,8 @@ class ReconciliationService
      */
     public function run(GuestWorkspace $workspace, array $decisions = []): ?ReconciliationRun
     {
+        $this->deadline->checkpoint();
+
         return DB::transaction(function () use ($workspace, $decisions): ?ReconciliationRun {
             GuestWorkspace::query()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
             $batches = $this->latestValidatedBatches($workspace);
@@ -63,6 +67,7 @@ class ReconciliationService
             $payoutResult = $this->payouts->reconcile(
                 $records->get(CanonicalRecord::TYPE_PAYOUT_COMPONENT, collect()),
             );
+            $this->deadline->checkpoint();
             $coverageIssue = $this->crmCoverageIssue($batches, $records);
             $giftResults = $this->matches->reconcile(
                 $records->get(CanonicalRecord::TYPE_GIFT, collect()),
@@ -72,6 +77,7 @@ class ReconciliationService
                 $normalizedDecisions['manual_matches'],
                 $coverageIssue,
             );
+            $this->deadline->checkpoint();
             $now = now();
             $outcomeCounts = $this->counts(
                 $giftResults,
@@ -132,6 +138,7 @@ class ReconciliationService
             ], $giftResults);
 
             foreach (array_chunk($giftRows, 200) as $chunk) {
+                $this->deadline->checkpoint();
                 DB::table('gift_reconciliations')->insert($chunk);
             }
 
@@ -146,8 +153,11 @@ class ReconciliationService
             ], $payoutResult['payouts']);
 
             foreach (array_chunk($payoutRows, 200) as $chunk) {
+                $this->deadline->checkpoint();
                 DB::table('payout_reconciliations')->insert($chunk);
             }
+
+            $this->deadline->checkpoint();
 
             return $run->load(['gifts', 'payouts']);
         });

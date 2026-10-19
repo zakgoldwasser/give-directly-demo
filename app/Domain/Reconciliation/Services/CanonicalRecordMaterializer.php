@@ -8,6 +8,7 @@ use App\Models\GuestWorkspace;
 use App\Models\ImportBatch;
 use App\Models\ImportRow;
 use App\Models\SourceOccurrence;
+use App\Services\Operations\ProcessingDeadline;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,7 @@ class CanonicalRecordMaterializer
 
     public function __construct(
         private readonly ScopedRecordIdentity $identities,
+        private readonly ProcessingDeadline $deadline,
     ) {}
 
     /**
@@ -27,6 +29,7 @@ class CanonicalRecordMaterializer
      */
     public function rebuildWorkspace(GuestWorkspace $workspace): void
     {
+        $this->deadline->checkpoint();
         DB::transaction(function () use ($workspace): void {
             GuestWorkspace::query()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
 
@@ -48,6 +51,7 @@ class CanonicalRecordMaterializer
             $newRecordRows = [];
 
             foreach ($groups as $groupKey => &$group) {
+                $this->deadline->checkpoint();
                 $record = $existingRecords->get($groupKey);
                 $recordId = $record?->id ?? (string) Str::uuid();
                 $group['record_id'] = $recordId;
@@ -81,6 +85,7 @@ class CanonicalRecordMaterializer
             $batchCounts = $this->emptyBatchCounts($batches);
 
             foreach ($groups as $groupKey => $group) {
+                $this->deadline->checkpoint();
                 $recordId = $group['record_id'];
                 $byRevision = [];
 
@@ -173,10 +178,12 @@ class CanonicalRecordMaterializer
                 ]);
 
             foreach (array_chunk($newVersionRows, 200) as $chunk) {
+                $this->deadline->checkpoint();
                 DB::table('canonical_record_versions')->insert($chunk);
             }
 
             foreach (array_chunk($versionRows, 200) as $chunk) {
+                $this->deadline->checkpoint();
                 DB::table('canonical_record_versions')->upsert(
                     $chunk,
                     ['id'],
@@ -185,6 +192,7 @@ class CanonicalRecordMaterializer
             }
 
             foreach (array_chunk(array_values($recordRows), 200) as $chunk) {
+                $this->deadline->checkpoint();
                 DB::table('canonical_records')->upsert(
                     $chunk,
                     ['id'],
@@ -193,6 +201,7 @@ class CanonicalRecordMaterializer
             }
 
             foreach (array_chunk($occurrenceRows, 200) as $chunk) {
+                $this->deadline->checkpoint();
                 DB::table('source_occurrences')->upsert(
                     $chunk,
                     ['import_row_id', 'mapping_profile_id'],
@@ -201,6 +210,7 @@ class CanonicalRecordMaterializer
             }
 
             foreach ($batches as $batch) {
+                $this->deadline->checkpoint();
                 if ($batch->status === ImportBatch::STATUS_SUPERSEDED) {
                     continue;
                 }

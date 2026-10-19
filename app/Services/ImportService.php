@@ -12,6 +12,8 @@ use App\Models\ImportBatch;
 use App\Models\ImportRow;
 use App\Services\ImportExceptions\DuplicateImportException;
 use App\Services\ImportExceptions\ImportLimitException;
+use App\Services\Operations\ProcessingDeadline;
+use App\Services\Operations\ProcessingDeadlineExceeded;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -25,6 +27,7 @@ class ImportService
         private readonly CsvParserService $parser,
         private readonly ReferenceFixtureCatalog $fixtures,
         private readonly MappingValidationService $mappings,
+        private readonly ProcessingDeadline $deadline,
     ) {}
 
     /**
@@ -110,6 +113,7 @@ class ImportService
 
     private function process(ImportBatch $batch, bool $runReconciliation = true): void
     {
+        $this->deadline->checkpoint();
         $batch->forceFill([
             'status' => ImportBatch::STATUS_PROCESSING,
             'processing_error_code' => null,
@@ -117,6 +121,7 @@ class ImportService
 
         try {
             $parsed = $this->parser->parse(Storage::disk('imports')->path($batch->private_file_path));
+            $this->deadline->checkpoint();
 
             DB::transaction(function () use ($batch, $parsed): void {
                 $now = now();
@@ -136,6 +141,7 @@ class ImportService
                 }
 
                 foreach (array_chunk($rows, 100) as $chunk) {
+                    $this->deadline->checkpoint();
                     ImportRow::query()->insert($chunk);
                 }
 
@@ -151,7 +157,12 @@ class ImportService
                 ])->save();
             });
 
+            $this->deadline->checkpoint();
             $this->mappings->initialize($batch->refresh(), $runReconciliation);
+        } catch (ProcessingDeadlineExceeded $exception) {
+            $this->failBatch($batch, 'PROCESSING_DEADLINE_EXCEEDED');
+
+            throw $exception;
         } catch (CsvParseException $exception) {
             $this->failBatch($batch, $exception->errorCode);
             Log::warning('Import parse failed', [
@@ -235,6 +246,7 @@ class ImportService
         ?array $context = null,
         bool $runReconciliation = true,
     ): ImportBatch {
+        $this->deadline->checkpoint();
         $size = filesize($sourcePath);
         $maxBytes = (int) config('reconciliation.max_csv_size_bytes');
 
@@ -251,6 +263,8 @@ class ImportService
         if ($checksum === false) {
             throw new ImportLimitException('FILE_UNREADABLE', 'The CSV could not be read.');
         }
+
+        $this->deadline->checkpoint();
 
         if ($enforceUploadPolicy) {
             $this->assertUploadIsAllowed($checksum, $reportType);
@@ -280,6 +294,8 @@ class ImportService
         if (! $stored) {
             throw new ImportLimitException('FILE_STORAGE_FAILED', 'The CSV could not be stored.');
         }
+
+        $this->deadline->checkpoint();
 
         $batch = ImportBatch::query()->create([
             'guest_workspace_id' => $workspace->id,

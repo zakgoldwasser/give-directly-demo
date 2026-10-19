@@ -7,6 +7,7 @@ use App\Models\GuestWorkspace;
 use App\Models\ImportBatch;
 use App\Models\ImportRow;
 use App\Models\MappingProfile;
+use App\Services\Operations\ProcessingDeadline;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
@@ -18,10 +19,12 @@ class MappingValidationService
         private readonly CanonicalReportSchema $schemas,
         private readonly CanonicalRecordMaterializer $materializer,
         private readonly ReconciliationService $reconciliation,
+        private readonly ProcessingDeadline $deadline,
     ) {}
 
     public function initialize(ImportBatch $batch, bool $runReconciliation = true): ImportBatch
     {
+        $this->deadline->checkpoint();
         $headers = $this->headers($batch);
         $fingerprint = $this->fingerprint($headers);
 
@@ -123,6 +126,7 @@ class MappingValidationService
         $now = now();
 
         foreach ($batch->rows()->orderBy('row_number')->get() as $row) {
+            $this->deadline->checkpoint();
             [$normalized, $rowIssues] = $this->normalizeRow(
                 $batch->report_type,
                 $row->raw_data,
@@ -159,6 +163,7 @@ class MappingValidationService
 
         DB::transaction(function () use ($batch, $profile, $issues, $headers, $updates, $validRows, $reviewRows, $rejectedRows, $now): void {
             foreach (array_chunk($updates, 200) as $chunk) {
+                $this->deadline->checkpoint();
                 DB::table('import_rows')->upsert(
                     $chunk,
                     ['id'],
@@ -183,8 +188,10 @@ class MappingValidationService
 
         $batch = $batch->refresh()->load('mappingProfile');
         $workspace = $batch->workspace()->firstOrFail();
+        $this->deadline->checkpoint();
         $this->materializer->rebuildWorkspace($workspace);
         if ($runReconciliation) {
+            $this->deadline->checkpoint();
             $this->reconciliation->runCurrentIfReady($workspace);
         }
 

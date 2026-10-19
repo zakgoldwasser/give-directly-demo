@@ -125,4 +125,12 @@ class GuestWorkspace extends Model
     {
         return $this->hasMany(ConfirmationBatch::class);
     }
+
+    /**
+     * @return HasMany<WorkspaceOperation, $this>
+     */
+    public function operations(): HasMany
+    {
+        return $this->hasMany(WorkspaceOperation::class);
+    }
 }
