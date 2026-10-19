@@ -201,6 +201,10 @@ class CanonicalRecordMaterializer
             }
 
             foreach ($batches as $batch) {
+                if ($batch->status === ImportBatch::STATUS_SUPERSEDED) {
+                    continue;
+                }
+
                 $batch->forceFill([
                     ...$batchCounts[$batch->id],
                     'materialized_at' => $batch->status === ImportBatch::STATUS_VALIDATED ? $now : null,

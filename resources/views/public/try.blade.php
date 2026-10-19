@@ -72,6 +72,12 @@
         </div>
     @endif
 
+    @if (session('verification_completed'))
+        <div class="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
+            {{ session('verification_completed') }}
+        </div>
+    @endif
+
     @if ($errors->any())
         <div class="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="alert">
             {{ $errors->first() }}
@@ -335,9 +341,33 @@
                             </table>
                         </div>
                         <p class="mt-3 text-xs text-sky-800">Snapshot agreement confirms the recorded values. It does not prove that an external CRM import ran.</p>
+                        @if ($confirmationBatch->verification_reconciliation_run_id === null && $verificationEligible)
+                            <form class="mt-3" method="POST" action="{{ route('try.confirmations.verify', $confirmationBatch) }}">
+                                @csrf
+                                <button class="rounded-lg bg-sky-700 px-4 py-2 font-medium text-white hover:bg-sky-800" type="submit">Run post-import verification</button>
+                            </form>
+                        @endif
                     </div>
                 @endif
             @endif
+        </section>
+    @endif
+
+    @if ($confirmationBatch?->verification_reconciliation_run_id === $reconciliationRun?->id)
+        <section class="mt-8 rounded-xl border border-emerald-200 bg-emerald-50 p-6" aria-labelledby="verification-heading">
+            <p class="text-sm font-medium uppercase tracking-wide text-emerald-700">Post-import verification</p>
+            <h2 id="verification-heading" class="mt-1 text-xl font-semibold text-stone-900">The confirmed snapshot is reconciled</h2>
+            <p class="mt-2 text-sm text-stone-700">Run {{ $reconciliationRun->sequence }} replaced the active CRM baseline with the immutable confirmed snapshot. The original CRM import, reviewed run, export, and confirmation remain in history.</p>
+            <p class="mt-2 text-sm font-medium text-emerald-950">The rerun found {{ $confirmationBatch->verification_counts['create'] }} creates, {{ $confirmationBatch->verification_counts['update'] }} updates, {{ $confirmationBatch->verification_counts['unchanged'] }} unchanged gifts, and {{ $confirmationBatch->verification_counts['held'] }} held gifts.</p>
+            <dl class="mt-5 grid gap-3 sm:grid-cols-4">
+                @foreach (['create' => 'Creates', 'update' => 'Updates', 'unchanged' => 'Unchanged', 'held' => 'Held'] as $outcome => $label)
+                    <div class="rounded-lg bg-white/80 p-4">
+                        <dt class="text-xs text-stone-500">{{ $label }}</dt>
+                        <dd class="mt-1 text-2xl font-semibold text-stone-900">{{ $confirmationBatch->verification_counts[$outcome] ?? 0 }}</dd>
+                    </div>
+                @endforeach
+            </dl>
+            <p class="mt-4 text-xs text-emerald-800">Source: {{ $confirmationBatch->snapshot_filename }} · checksum {{ substr($confirmationBatch->snapshot_checksum, 0, 12) }}… · no CRM write was performed.</p>
         </section>
     @endif
 

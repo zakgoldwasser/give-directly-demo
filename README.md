@@ -59,6 +59,8 @@ Configure `external_gift_key`, `source_transaction_id`, `crm_record_id`, and `ca
 
 The guided flow can compare every approved create or update with the supplied `crm-post-import.csv` snapshot. It records matches, field mismatches, duplicate keys, and cases that cannot be verified because snapshot coverage is incomplete. The comparison reads only the exported gift fields and persists the snapshot checksum and per-action evidence. It never calls or writes to an external CRM, and a match does not prove that an external import ran.
 
+After confirmation, the guided flow can promote that immutable snapshot to the active CRM baseline and run the existing reconciliation engine again with the recorded review decisions. The reference result is 0 creates, 0 updates, 8 unchanged gifts, and the same 4 held gifts. The original CRM import and every earlier run remain available as historical evidence.
+
 ## Current limits
 
 | Setting | Default |

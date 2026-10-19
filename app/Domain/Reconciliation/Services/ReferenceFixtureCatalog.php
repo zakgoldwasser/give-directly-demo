@@ -180,7 +180,10 @@ class ReferenceFixtureCatalog
 
         if (! is_array($snapshot)
             || ! isset($snapshot['filename'], $snapshot['sha256'], $snapshot['expected_rows'], $snapshot['expected'])
-            || ! is_array($snapshot['expected'])) {
+            || ! is_array($snapshot['expected'])
+            || ! isset($snapshot['verification_outcomes'])
+            || ! is_array($snapshot['verification_outcomes'])
+            || array_diff(['create', 'update', 'unchanged', 'held'], array_keys($snapshot['verification_outcomes'])) !== []) {
             throw new RuntimeException('The reference confirmation snapshot entry is incomplete.');
         }
 

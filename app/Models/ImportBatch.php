@@ -32,6 +32,8 @@ class ImportBatch extends Model
 
     public const STATUS_EXPIRED = 'expired';
 
+    public const STATUS_SUPERSEDED = 'superseded';
+
     /**
      * Statuses that count toward the per-workspace active import cap.
      *
@@ -145,6 +147,7 @@ class ImportBatch extends Model
             self::STATUS_COMPLETED,
             self::STATUS_FAILED,
             self::STATUS_EXPIRED,
+            self::STATUS_SUPERSEDED,
         ], true);
     }
 

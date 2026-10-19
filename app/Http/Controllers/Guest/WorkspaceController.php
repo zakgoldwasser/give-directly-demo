@@ -50,12 +50,27 @@ class WorkspaceController extends Controller
             ->first();
 
         $reviewOptions = $this->reviews->options($workspace, $reconciliationRun);
-        $imports = $workspace->importBatches()->with('mappingProfile')->get()->keyBy('report_type');
-        $exportBatch = $reconciliationRun?->exportBatches()->orderByDesc('generated_at')->first();
-        $confirmationBatch = $exportBatch?->confirmations()
+        $imports = $workspace->importBatches()
+            ->with('mappingProfile')
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get()
+            ->keyBy('report_type');
+        $exportBatch = $workspace->exportBatches()->orderByDesc('generated_at')->first();
+        $confirmationBatch = $workspace->confirmationBatches()
             ->with(['results' => fn ($query) => $query->orderBy('transaction_id')])
             ->orderByDesc('completed_at')
             ->first();
+        $expectedConfirmationCounts = $this->fixtures->confirmationSnapshot()['expected'];
+        $verificationEligible = $confirmationBatch !== null
+            && collect($expectedConfirmationCounts)->every(
+                fn (int $count, string $outcome): bool => ($confirmationBatch->counts[$outcome] ?? null) === $count,
+            );
+        $expectedConfirmationCounts = $this->fixtures->confirmationSnapshot()['expected'];
+        $verificationEligible = $confirmationBatch !== null
+            && collect($expectedConfirmationCounts)->every(
+                fn (int $count, string $outcome): bool => ($confirmationBatch->counts[$outcome] ?? null) === $count,
+            );
 
         return view('public.try', [
             'workspace' => $workspace,
@@ -74,6 +89,8 @@ class WorkspaceController extends Controller
             'approvalPreview' => $this->approvals->preview($workspace, $reconciliationRun),
             'exportBatch' => $exportBatch,
             'confirmationBatch' => $confirmationBatch,
+            'verificationEligible' => $verificationEligible,
+            'verificationEligible' => $verificationEligible,
             'exportProfileVersion' => ExportService::PROFILE_VERSION,
             'crmSnapshotGeneratedAt' => $imports->get('crm')?->context['generated_at'] ?? null,
             'fixtureReports' => $this->fixtures->reports(),

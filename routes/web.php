@@ -11,6 +11,7 @@ use App\Http\Controllers\Guest\LandingController;
 use App\Http\Controllers\Guest\MappingController;
 use App\Http\Controllers\Guest\MatchReviewController;
 use App\Http\Controllers\Guest\PageController;
+use App\Http\Controllers\Guest\PostImportVerificationController;
 use App\Http\Controllers\Guest\WorkspaceController;
 use App\Http\Middleware\EnsureGuestWorkspace;
 use Illuminate\Support\Facades\Route;
@@ -36,4 +37,6 @@ Route::middleware(EnsureGuestWorkspace::class)->group(function () {
     Route::post('/try/exports', ExportController::class)->name('try.exports.store');
     Route::get('/try/exports/{export}/download', ExportDownloadController::class)->name('try.exports.download');
     Route::post('/try/exports/{export}/confirm', ConfirmationController::class)->name('try.exports.confirm');
+    Route::post('/try/confirmations/{confirmation}/verify', PostImportVerificationController::class)
+        ->name('try.confirmations.verify');
 });

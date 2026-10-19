@@ -6,6 +6,7 @@ use App\Domain\Reconciliation\Exceptions\CsvParseException;
 use App\Domain\Reconciliation\Services\CsvParserService;
 use App\Domain\Reconciliation\Services\MappingValidationService;
 use App\Domain\Reconciliation\Services\ReferenceFixtureCatalog;
+use App\Models\ConfirmationBatch;
 use App\Models\GuestWorkspace;
 use App\Models\ImportBatch;
 use App\Models\ImportRow;
@@ -69,6 +70,36 @@ class ImportService
         );
     }
 
+    public function createFromConfirmationSnapshot(GuestWorkspace $workspace, ConfirmationBatch $confirmation): ImportBatch
+    {
+        $scenario = $this->fixtures->scenario();
+        $snapshot = $this->fixtures->confirmationSnapshot();
+        $crmContext = $this->fixtures->report('crm')['context'];
+        $context = [
+            'scenario_id' => $scenario['scenario_id'],
+            'organization_id' => $scenario['organization_id'],
+            'provider_id' => $scenario['provider_id'],
+            'account_id' => $scenario['account_id'],
+            'currency' => $scenario['currency'],
+            ...$crmContext,
+            'generated_at' => $confirmation->snapshot_generated_at->toIso8601String(),
+            'complete_snapshot' => (bool) ($snapshot['complete_snapshot'] ?? false),
+            'simulated' => (bool) ($snapshot['simulated'] ?? false),
+            'confirmation_batch_id' => $confirmation->id,
+            'export_batch_id' => $confirmation->export_batch_id,
+        ];
+
+        return $this->createFromPath(
+            workspace: $workspace,
+            sourcePath: $this->fixtures->confirmationSnapshotPath(),
+            reportType: 'crm',
+            originalName: (string) $snapshot['filename'],
+            enforceUploadPolicy: false,
+            context: $context,
+            runReconciliation: false,
+        );
+    }
+
     public function findForWorkspace(GuestWorkspace $workspace, string $importId): ?ImportBatch
     {
         return ImportBatch::query()
@@ -77,7 +108,7 @@ class ImportService
             ->first();
     }
 
-    private function process(ImportBatch $batch): void
+    private function process(ImportBatch $batch, bool $runReconciliation = true): void
     {
         $batch->forceFill([
             'status' => ImportBatch::STATUS_PROCESSING,
@@ -120,7 +151,7 @@ class ImportService
                 ])->save();
             });
 
-            $this->mappings->initialize($batch->refresh());
+            $this->mappings->initialize($batch->refresh(), $runReconciliation);
         } catch (CsvParseException $exception) {
             $this->failBatch($batch, $exception->errorCode);
             Log::warning('Import parse failed', [
@@ -201,6 +232,8 @@ class ImportService
         string $reportType,
         string $originalName,
         bool $enforceUploadPolicy,
+        ?array $context = null,
+        bool $runReconciliation = true,
     ): ImportBatch {
         $size = filesize($sourcePath);
         $maxBytes = (int) config('reconciliation.max_csv_size_bytes');
@@ -255,7 +288,7 @@ class ImportService
             'private_file_path' => $relativePath,
             'sha256_checksum' => $checksum,
             'parsing_config' => null,
-            'context' => $this->fixtures->contextFor($reportType, $checksum),
+            'context' => $context ?? $this->fixtures->contextFor($reportType, $checksum),
             'status' => ImportBatch::STATUS_UPLOADED,
             'total_rows' => 0,
             'processed_rows' => 0,
@@ -267,7 +300,7 @@ class ImportService
             'expires_at' => $workspace->expires_at,
         ]);
 
-        $this->process($batch);
+        $this->process($batch, $runReconciliation);
 
         return $batch->refresh();
     }

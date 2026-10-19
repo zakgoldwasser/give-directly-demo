@@ -20,7 +20,7 @@ class MappingValidationService
         private readonly ReconciliationService $reconciliation,
     ) {}
 
-    public function initialize(ImportBatch $batch): ImportBatch
+    public function initialize(ImportBatch $batch, bool $runReconciliation = true): ImportBatch
     {
         $headers = $this->headers($batch);
         $fingerprint = $this->fingerprint($headers);
@@ -35,7 +35,7 @@ class MappingValidationService
             ->first();
 
         if ($savedProfile !== null) {
-            return $this->applyProfile($batch, $savedProfile);
+            return $this->applyProfile($batch, $savedProfile, $runReconciliation);
         }
 
         $mapping = [];
@@ -63,7 +63,7 @@ class MappingValidationService
             return $batch->refresh();
         }
 
-        return $this->applyProfile($batch, $this->createProfile($batch, $mapping));
+        return $this->applyProfile($batch, $this->createProfile($batch, $mapping), $runReconciliation);
     }
 
     /**
@@ -107,7 +107,7 @@ class MappingValidationService
         return hash('sha256', json_encode($normalized, JSON_THROW_ON_ERROR));
     }
 
-    private function applyProfile(ImportBatch $batch, MappingProfile $profile): ImportBatch
+    private function applyProfile(ImportBatch $batch, MappingProfile $profile, bool $runReconciliation = true): ImportBatch
     {
         $headers = $this->headers($batch);
         $issues = $this->mappingIssues($batch->report_type, $headers, $profile->mapping);
@@ -184,7 +184,9 @@ class MappingValidationService
         $batch = $batch->refresh()->load('mappingProfile');
         $workspace = $batch->workspace()->firstOrFail();
         $this->materializer->rebuildWorkspace($workspace);
-        $this->reconciliation->runCurrentIfReady($workspace);
+        if ($runReconciliation) {
+            $this->reconciliation->runCurrentIfReady($workspace);
+        }
 
         return $batch->refresh()->load('mappingProfile');
     }

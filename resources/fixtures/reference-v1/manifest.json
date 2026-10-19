@@ -67,6 +67,12 @@
             "mismatches_snapshot": 0,
             "duplicate_key": 0,
             "cannot_verify_coverage": 0
+        },
+        "verification_outcomes": {
+            "create": 0,
+            "update": 0,
+            "unchanged": 8,
+            "held": 4
         }
     },
     "expected": {
