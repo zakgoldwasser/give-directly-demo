@@ -21,6 +21,7 @@ class ReadinessController extends Controller
         $checks = [
             'database' => $this->databaseReady(),
             'storage_configuration' => $this->storageConfigurationReady(),
+            'storage_credentials' => $this->storageCredentialsReady(),
             'imports_storage' => $this->storageReady('imports'),
             'exports_storage' => $this->storageReady('exports'),
         ];
@@ -46,6 +47,32 @@ class ReadinessController extends Controller
 
         return collect(['imports', 'exports'])
             ->every(fn (string $disk): bool => config("filesystems.disks.{$disk}.driver") === 's3');
+    }
+
+    private function storageCredentialsReady(): bool
+    {
+        if (! app()->isProduction()) {
+            return true;
+        }
+
+        $required = [
+            'access_key' => config('filesystems.disks.imports.key'),
+            'secret_key' => config('filesystems.disks.imports.secret'),
+            'region' => config('filesystems.disks.imports.region'),
+            'bucket' => config('filesystems.disks.imports.bucket'),
+        ];
+        $missing = array_keys(array_filter(
+            $required,
+            fn (mixed $value): bool => ! is_string($value) || trim($value) === '',
+        ));
+
+        if ($missing !== []) {
+            $this->failures['storage_credentials'] = ['missing' => implode(', ', $missing)];
+
+            return false;
+        }
+
+        return true;
     }
 
     private function databaseReady(): bool

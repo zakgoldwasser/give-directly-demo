@@ -132,6 +132,7 @@ class PublicReleaseHardeningTest extends TestCase
                 'checks' => [
                     'database' => true,
                     'storage_configuration' => true,
+                    'storage_credentials' => true,
                     'imports_storage' => true,
                     'exports_storage' => true,
                 ],
@@ -150,7 +151,9 @@ class PublicReleaseHardeningTest extends TestCase
             ->getJson(route('operations.ready'))
             ->assertServiceUnavailable()
             ->assertJsonPath('status', 'unavailable')
-            ->assertJsonPath('checks.storage_configuration', false);
+            ->assertJsonPath('checks.storage_configuration', false)
+            ->assertJsonPath('checks.storage_credentials', false)
+            ->assertJsonStructure(['failures' => ['storage_credentials' => ['missing']]]);
     }
 
     public function test_private_artifact_disks_do_not_request_s3_acls(): void
