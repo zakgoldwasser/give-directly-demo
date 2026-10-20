@@ -26,14 +26,14 @@ Read the deployed values with:
 aws cloudformation describe-stacks --stack-name give-directly-demo-storage --query "Stacks[0].Outputs" --output table
 ```
 
-The template deliberately does not create an `AWS::IAM::AccessKey`: CloudFormation would retain that long-lived credential in stack state. In IAM, open the user named by the `StorageUserName` output, create one access key, and save it directly as `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in Vercel. Do not save it in this repository.
+The template deliberately does not create an `AWS::IAM::AccessKey`: CloudFormation would retain that long-lived credential in stack state. In IAM, open the user named by the `StorageUserName` output, create one access key, and save it directly as `RECONCILIATION_S3_ACCESS_KEY_ID` and `RECONCILIATION_S3_SECRET_ACCESS_KEY` in Vercel. Do not save it in this repository.
 
 Set these Vercel variables from the stack outputs:
 
 ```dotenv
 RECONCILIATION_STORAGE_DRIVER=s3
-AWS_ACCESS_KEY_ID=<IAM access key ID>
-AWS_SECRET_ACCESS_KEY=<IAM secret access key>
+RECONCILIATION_S3_ACCESS_KEY_ID=<IAM access key ID>
+RECONCILIATION_S3_SECRET_ACCESS_KEY=<IAM secret access key>
 AWS_DEFAULT_REGION=<BucketRegion output>
 AWS_BUCKET=<BucketName output>
 AWS_USE_PATH_STYLE_ENDPOINT=false

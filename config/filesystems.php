@@ -40,8 +40,8 @@ return [
 
         'imports' => [
             'driver' => env('RECONCILIATION_STORAGE_DRIVER', 'local'),
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'key' => env('RECONCILIATION_S3_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID')),
+            'secret' => env('RECONCILIATION_S3_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY')),
             'region' => env('AWS_DEFAULT_REGION'),
             'bucket' => env('AWS_BUCKET'),
             'endpoint' => env('AWS_ENDPOINT'),
@@ -55,8 +55,8 @@ return [
 
         'exports' => [
             'driver' => env('RECONCILIATION_STORAGE_DRIVER', 'local'),
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'key' => env('RECONCILIATION_S3_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID')),
+            'secret' => env('RECONCILIATION_S3_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY')),
             'region' => env('AWS_DEFAULT_REGION'),
             'bucket' => env('AWS_BUCKET'),
             'endpoint' => env('AWS_ENDPOINT'),
