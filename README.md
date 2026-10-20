@@ -83,6 +83,8 @@ Laravel's public `/up` route reports basic application health. The `/ready` rout
 
 Production must use external PostgreSQL, database-backed sessions and cache, and S3-compatible private object storage. Set `RECONCILIATION_STORAGE_DRIVER=s3`, the `AWS_*` connection values, distinct `RECONCILIATION_IMPORTS_ROOT` and `RECONCILIATION_EXPORTS_ROOT` prefixes, `APP_KEY`, `CRON_SECRET`, and `RECONCILIATION_READINESS_SECRET` in Vercel. When Vercel's server-side runtime flag is present, the limiter uses Vercel's edge-overwritten client-IP header; other environments use the socket IP. Run `php artisan migrate --force` as a release step; migrations are intentionally not run when a container starts.
 
+For the lightweight demo deployment, [`infra/sam/template.yaml`](infra/sam/template.yaml) provisions the private S3 storage and least-privilege IAM user. [`infra/sam/README.md`](infra/sam/README.md) contains the SAM deployment commands, access-key handoff, and the pooled Neon PostgreSQL variables. Neon requires no application adapter: Laravel uses its standard PostgreSQL connection through `DB_URL`, with `DB_SSLMODE=require` retained for the deployment preflight.
+
 ## Deployment acceptance
 
 Run the production preflight inside the release container after migrations:

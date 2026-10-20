@@ -1,0 +1,127 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Private reconciliation artifact storage for the GiveDirectly demo.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: demo
+    AllowedPattern: '^[a-z0-9-]+$'
+    Description: Short environment label used for tags.
+  BucketName:
+    Type: String
+    Default: ''
+    Description: Optional globally unique bucket name. Leave blank for a generated name.
+  ArtifactRetentionDays:
+    Type: Number
+    Default: 2
+    MinValue: 1
+    Description: Safety-net retention for reconciliation imports and exports.
+
+Conditions:
+  HasExplicitBucketName: !Not [!Equals [!Ref BucketName, '']]
+
+Resources:
+  ReconciliationArtifactsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !If
+        - HasExplicitBucketName
+        - !Ref BucketName
+        - !Ref AWS::NoValue
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireReconciliationArtifacts
+            Status: Enabled
+            Prefix: reconciliation/
+            ExpirationInDays: !Ref ArtifactRetentionDays
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Application
+          Value: give-directly-reconciliation
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  ReconciliationArtifactsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ReconciliationArtifactsBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !GetAtt ReconciliationArtifactsBucket.Arn
+              - !Sub '${ReconciliationArtifactsBucket.Arn}/*'
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+
+  ReconciliationStorageUser:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+        - PolicyName: ReconciliationArtifactAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ListApplicationPrefixes
+                Effect: Allow
+                Action: s3:ListBucket
+                Resource: !GetAtt ReconciliationArtifactsBucket.Arn
+                Condition:
+                  StringLike:
+                    s3:prefix:
+                      - reconciliation/imports
+                      - reconciliation/imports/*
+                      - reconciliation/exports
+                      - reconciliation/exports/*
+              - Sid: ManageApplicationObjects
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub '${ReconciliationArtifactsBucket.Arn}/reconciliation/imports/*'
+                  - !Sub '${ReconciliationArtifactsBucket.Arn}/reconciliation/exports/*'
+      Tags:
+        - Key: Application
+          Value: give-directly-reconciliation
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+Outputs:
+  BucketName:
+    Description: Set this as AWS_BUCKET in Vercel.
+    Value: !Ref ReconciliationArtifactsBucket
+  BucketRegion:
+    Description: Set this as AWS_DEFAULT_REGION in Vercel.
+    Value: !Ref AWS::Region
+  StorageUserName:
+    Description: Create one access key for this user and store it only in Vercel.
+    Value: !Ref ReconciliationStorageUser
+  ImportsRoot:
+    Description: Set this as RECONCILIATION_IMPORTS_ROOT.
+    Value: reconciliation/imports
+  ExportsRoot:
+    Description: Set this as RECONCILIATION_EXPORTS_ROOT.
+    Value: reconciliation/exports
