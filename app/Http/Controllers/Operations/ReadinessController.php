@@ -107,13 +107,27 @@ class ReadinessController extends Controller
     private function logFailure(string $check, Throwable $exception): void
     {
         $failure = ['exception' => class_basename($exception)];
+        $causes = [];
+        $current = $exception;
 
-        if (method_exists($exception, 'getAwsErrorCode')) {
-            $awsErrorCode = $exception->getAwsErrorCode();
-
-            if (is_string($awsErrorCode) && $awsErrorCode !== '') {
-                $failure['aws_error_code'] = $awsErrorCode;
+        while ($current instanceof Throwable) {
+            if ($current !== $exception) {
+                $causes[] = class_basename($current);
             }
+
+            if (! isset($failure['aws_error_code']) && method_exists($current, 'getAwsErrorCode')) {
+                $awsErrorCode = $current->getAwsErrorCode();
+
+                if (is_string($awsErrorCode) && $awsErrorCode !== '') {
+                    $failure['aws_error_code'] = $awsErrorCode;
+                }
+            }
+
+            $current = $current->getPrevious();
+        }
+
+        if ($causes !== []) {
+            $failure['causes'] = implode(', ', $causes);
         }
 
         $this->failures[$check] = $failure;
