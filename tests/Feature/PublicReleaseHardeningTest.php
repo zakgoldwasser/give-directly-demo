@@ -192,4 +192,25 @@ class PublicReleaseHardeningTest extends TestCase
         $this->assertFileExists(base_path('Dockerfile.vercel'));
         $this->assertFileExists(base_path('Caddyfile'));
     }
+
+    public function test_landing_form_actions_use_https_behind_a_forwarded_proxy(): void
+    {
+        config(['app.url' => 'https://app-ojcq.vercel.app']);
+
+        $response = $this->withServerVariables([
+            'HTTPS' => 'off',
+            'SERVER_PORT' => '80',
+        ])
+            ->withHeader('X-Forwarded-Proto', 'https')
+            ->get('/');
+
+        $response->assertOk();
+
+        preg_match_all('/<form[^>]*\saction="([^"]+)"/', $response->getContent(), $matches);
+        $this->assertNotEmpty($matches[1]);
+
+        foreach ($matches[1] as $action) {
+            $this->assertStringStartsWith('https://', $action);
+        }
+    }
 }

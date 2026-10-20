@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
         apiPrefix: '',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Vercel (and similar reverse proxies) terminate TLS and forward over HTTP.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'bearer.secret' => RequireConfiguredBearerToken::class,
             'bounded.operation' => BoundedWorkspaceOperation::class,
