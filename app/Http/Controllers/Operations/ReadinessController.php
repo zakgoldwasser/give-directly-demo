@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Operations;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +13,9 @@ use Throwable;
 
 class ReadinessController extends Controller
 {
+    /** @var array<string, array<string, string>> */
+    private array $failures = [];
+
     public function __invoke(): JsonResponse
     {
         $checks = [
@@ -22,10 +26,16 @@ class ReadinessController extends Controller
         ];
         $ready = ! in_array(false, $checks, true);
 
-        return response()->json([
+        $payload = [
             'status' => $ready ? 'ready' : 'unavailable',
             'checks' => $checks,
-        ], $ready ? 200 : 503);
+        ];
+
+        if (! $ready && $this->failures !== []) {
+            $payload['failures'] = $this->failures;
+        }
+
+        return response()->json($payload, $ready ? 200 : 503);
     }
 
     private function storageConfigurationReady(): bool
@@ -59,16 +69,17 @@ class ReadinessController extends Controller
         $ready = false;
 
         try {
-            $written = Storage::disk($disk)->put($path, $contents);
+            $storage = $this->readinessStorage($disk);
+            $written = $storage->put($path, $contents);
             $ready = $written
-                && Storage::disk($disk)->exists($path)
-                && hash_equals($contents, Storage::disk($disk)->get($path));
+                && $storage->exists($path)
+                && hash_equals($contents, $storage->get($path));
         } catch (Throwable $exception) {
             $this->logFailure($disk.'_storage', $exception);
         } finally {
             if ($written) {
                 try {
-                    if (! Storage::disk($disk)->delete($path)) {
+                    if (! $storage->delete($path)) {
                         $ready = false;
                     }
                 } catch (Throwable $exception) {
@@ -81,8 +92,32 @@ class ReadinessController extends Controller
         return $ready;
     }
 
+    private function readinessStorage(string $disk): Filesystem
+    {
+        if (config("filesystems.disks.{$disk}.driver") !== 's3') {
+            return Storage::disk($disk);
+        }
+
+        return Storage::build([
+            ...config("filesystems.disks.{$disk}"),
+            'throw' => true,
+        ]);
+    }
+
     private function logFailure(string $check, Throwable $exception): void
     {
+        $failure = ['exception' => class_basename($exception)];
+
+        if (method_exists($exception, 'getAwsErrorCode')) {
+            $awsErrorCode = $exception->getAwsErrorCode();
+
+            if (is_string($awsErrorCode) && $awsErrorCode !== '') {
+                $failure['aws_error_code'] = $awsErrorCode;
+            }
+        }
+
+        $this->failures[$check] = $failure;
+
         Log::warning('Readiness check failed.', [
             'check' => $check,
             'exception_class' => $exception::class,
