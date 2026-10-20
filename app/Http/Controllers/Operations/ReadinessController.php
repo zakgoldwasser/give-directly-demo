@@ -16,6 +16,7 @@ class ReadinessController extends Controller
     {
         $checks = [
             'database' => $this->databaseReady(),
+            'storage_configuration' => $this->storageConfigurationReady(),
             'imports_storage' => $this->storageReady('imports'),
             'exports_storage' => $this->storageReady('exports'),
         ];
@@ -25,6 +26,16 @@ class ReadinessController extends Controller
             'status' => $ready ? 'ready' : 'unavailable',
             'checks' => $checks,
         ], $ready ? 200 : 503);
+    }
+
+    private function storageConfigurationReady(): bool
+    {
+        if (! app()->isProduction()) {
+            return true;
+        }
+
+        return collect(['imports', 'exports'])
+            ->every(fn (string $disk): bool => config("filesystems.disks.{$disk}.driver") === 's3');
     }
 
     private function databaseReady(): bool

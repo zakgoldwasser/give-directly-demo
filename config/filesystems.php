@@ -49,7 +49,6 @@ return [
             'root' => env('RECONCILIATION_STORAGE_DRIVER', 'local') === 'local'
                 ? storage_path('app/private/imports')
                 : env('RECONCILIATION_IMPORTS_ROOT', 'reconciliation/imports'),
-            'visibility' => 'private',
             'throw' => false,
             'report' => false,
         ],
@@ -65,7 +64,6 @@ return [
             'root' => env('RECONCILIATION_STORAGE_DRIVER', 'local') === 'local'
                 ? storage_path('app/private/exports')
                 : env('RECONCILIATION_EXPORTS_ROOT', 'reconciliation/exports'),
-            'visibility' => 'private',
             'throw' => false,
             'report' => false,
         ],

@@ -131,6 +131,7 @@ class PublicReleaseHardeningTest extends TestCase
                 'status' => 'ready',
                 'checks' => [
                     'database' => true,
+                    'storage_configuration' => true,
                     'imports_storage' => true,
                     'exports_storage' => true,
                 ],
@@ -138,6 +139,24 @@ class PublicReleaseHardeningTest extends TestCase
 
         $this->assertSame([], Storage::disk('imports')->allFiles());
         $this->assertSame([], Storage::disk('exports')->allFiles());
+    }
+
+    public function test_readiness_rejects_ephemeral_storage_in_production(): void
+    {
+        config(['reconciliation.readiness_secret' => 'readiness-secret-123456']);
+        $this->app->detectEnvironment(fn (): string => 'production');
+
+        $this->withToken('readiness-secret-123456')
+            ->getJson(route('operations.ready'))
+            ->assertServiceUnavailable()
+            ->assertJsonPath('status', 'unavailable')
+            ->assertJsonPath('checks.storage_configuration', false);
+    }
+
+    public function test_private_artifact_disks_do_not_request_s3_acls(): void
+    {
+        $this->assertArrayNotHasKey('visibility', config('filesystems.disks.imports'));
+        $this->assertArrayNotHasKey('visibility', config('filesystems.disks.exports'));
     }
 
     public function test_authenticated_cleanup_sweeps_are_bounded_and_idempotent(): void
