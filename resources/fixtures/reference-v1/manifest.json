@@ -9,7 +9,7 @@
     "reports": {
         "donations": {
             "filename": "donations.csv",
-            "sha256": "46555de851be0bf05fec8bf284a3b76ddab8641384fc0d201f565789fbcf981e",
+            "sha256": "7cc4537b57ad4a7beab57619a5c404d04527ad19bc0937bde5072f064f31e9dc",
             "expected_rows": 13,
             "context": {
                 "report_type": "donations",

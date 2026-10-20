@@ -337,7 +337,6 @@ class MappingValidationService
             'email' => filter_var($value, FILTER_VALIDATE_EMAIL) !== false
                 ? [mb_strtolower($value), []]
                 : [null, [$this->issue('INVALID_EMAIL', $sourceHeader, "{$definition['label']} must be a valid email address.")]],
-            'boolean' => $this->normalizeBoolean($value, $sourceHeader),
             'date' => $this->normalizeDate($value, $sourceHeader),
             'datetime' => $this->normalizeDateTime($value, $sourceHeader),
             'currency' => strtoupper($value) === 'GBP'
@@ -353,18 +352,6 @@ class MappingValidationService
             'positive_integer' => $this->normalizePositiveInteger($value, $sourceHeader),
             'money', 'positive_money', 'non_negative_money' => $this->normalizeMoney($value, $sourceHeader, $definition['type']),
             default => [null, [$this->issue('UNSUPPORTED_FIELD_TYPE', $sourceHeader, "{$definition['label']} cannot be normalized.")]],
-        };
-    }
-
-    /**
-     * @return array{0: bool|null, 1: list<array{code: string, column: string|null, message: string, severity: string}>}
-     */
-    private function normalizeBoolean(string $value, string $column): array
-    {
-        return match (mb_strtolower($value)) {
-            'true' => [true, []],
-            'false' => [false, []],
-            default => [null, [$this->issue('INVALID_BOOLEAN', $column, 'Use true or false for boolean values.')]],
         };
     }
 

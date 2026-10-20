@@ -32,7 +32,7 @@ final class ReconciliationBenchmarkDataset
         $this->writeCsv($paths['donations'], [
             'transaction_id', 'gifted_at', 'gross_amount', 'currency', 'status',
             'refunded_amount', 'campaign_code', 'donor_ref', 'donor_email',
-            'anonymous', 'source_updated_at',
+            'source_updated_at',
         ], $this->donations());
 
         $this->writeCsv($paths['payouts'], [
@@ -66,7 +66,6 @@ final class ReconciliationBenchmarkDataset
                 'GENERAL',
                 sprintf('BENCH-DONOR-%04d', $index),
                 sprintf('benchmark-%04d@example.test', $index),
-                'false',
                 '2026-09-10T10:01:00+01:00',
             ];
         }

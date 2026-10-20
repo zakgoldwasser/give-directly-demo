@@ -45,7 +45,6 @@ class CanonicalReportSchema
             'campaign_code' => ['label' => 'Campaign code', 'type' => 'text', 'required' => true],
             'donor_ref' => ['label' => 'Donor reference', 'type' => 'text', 'required' => false],
             'donor_email' => ['label' => 'Donor email', 'type' => 'email', 'required' => false],
-            'anonymous' => ['label' => 'Anonymous', 'type' => 'boolean', 'required' => true],
             'source_updated_at' => ['label' => 'Source updated at', 'type' => 'datetime', 'required' => false],
         ];
     }

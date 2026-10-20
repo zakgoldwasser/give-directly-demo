@@ -153,8 +153,8 @@ class CanonicalMaterializationTest extends TestCase
     private function uploadDonation(string $filename, string $transactionId, string $gross, string $sourceUpdatedAt): void
     {
         $contents = implode("\n", [
-            'transaction_id,gifted_at,gross_amount,currency,status,refunded_amount,campaign_code,donor_ref,donor_email,anonymous,source_updated_at',
-            "{$transactionId},2026-09-01T10:00:00+00:00,{$gross},GBP,paid,0.00,GENERAL,,,false,{$sourceUpdatedAt}",
+            'transaction_id,gifted_at,gross_amount,currency,status,refunded_amount,campaign_code,donor_ref,donor_email,source_updated_at',
+            "{$transactionId},2026-09-01T10:00:00+00:00,{$gross},GBP,paid,0.00,GENERAL,,,{$sourceUpdatedAt}",
             '',
         ]);
 

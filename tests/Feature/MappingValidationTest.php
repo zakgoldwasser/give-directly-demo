@@ -28,8 +28,8 @@ class MappingValidationTest extends TestCase
     public function test_exact_canonical_headers_create_a_versioned_profile_and_normalize_money_without_floats(): void
     {
         $this->upload('donations', implode("\n", [
-            'transaction_id,gifted_at,gross_amount,currency,status,refunded_amount,campaign_code,donor_ref,donor_email,anonymous,source_updated_at',
-            '00042,2026-09-02T10:15:00+01:00,100.05,GBP,paid,0.00,GENERAL,,,false,2026-09-02T10:16:00+01:00',
+            'transaction_id,gifted_at,gross_amount,currency,status,refunded_amount,campaign_code,donor_ref,donor_email,source_updated_at',
+            '00042,2026-09-02T10:15:00+01:00,100.05,GBP,paid,0.00,GENERAL,,,2026-09-02T10:16:00+01:00',
             '',
         ]));
 
@@ -44,7 +44,6 @@ class MappingValidationTest extends TestCase
         $this->assertSame('00042', $row->normalized_data['transaction_id']);
         $this->assertSame(10005, $row->normalized_data['gross_amount_minor']);
         $this->assertSame(0, $row->normalized_data['refunded_amount_minor']);
-        $this->assertFalse($row->normalized_data['anonymous']);
         $this->assertSame($row->raw_data['gross_amount'], '100.05');
     }
 
@@ -68,8 +67,8 @@ class MappingValidationTest extends TestCase
     public function test_invalid_values_produce_actionable_row_findings_and_cannot_validate(): void
     {
         $this->upload('donations', implode("\n", [
-            'transaction_id,gifted_at,gross_amount,currency,status,refunded_amount,campaign_code,anonymous',
-            'D001,09/02/2026,100,USD,settled,120.00,GENERAL,yes',
+            'transaction_id,gifted_at,gross_amount,currency,status,refunded_amount,campaign_code',
+            'D001,09/02/2026,100,USD,settled,120.00,GENERAL',
             '',
         ]));
 
@@ -84,7 +83,6 @@ class MappingValidationTest extends TestCase
         $this->assertContains('INVALID_MONEY', $codes);
         $this->assertContains('UNSUPPORTED_CURRENCY', $codes);
         $this->assertContains('UNKNOWN_STATUS', $codes);
-        $this->assertContains('INVALID_BOOLEAN', $codes);
         $this->assertDatabaseCount('canonical_records', 0);
     }
 
@@ -107,8 +105,8 @@ class MappingValidationTest extends TestCase
     public function test_custom_mapping_creates_new_versions_and_revalidates_without_changing_raw_evidence(): void
     {
         $contents = implode("\n", [
-            'Gift ID,When,Gross,Curr,State,Returned,Campaign,Anon',
-            'D900,2026-09-02T10:15:00+01:00,25.00,GBP,paid,0.00,GENERAL,true',
+            'Gift ID,When,Gross,Curr,State,Returned,Campaign',
+            'D900,2026-09-02T10:15:00+01:00,25.00,GBP,paid,0.00,GENERAL',
             '',
         ]);
         $this->upload('donations', $contents);
@@ -122,7 +120,6 @@ class MappingValidationTest extends TestCase
             'status' => 'State',
             'refunded_amount' => 'Returned',
             'campaign_code' => 'Campaign',
-            'anonymous' => 'Anon',
         ];
 
         $this->post(route('try.imports.mapping.store', $batch), ['mapping' => $mapping])
@@ -188,8 +185,8 @@ class MappingValidationTest extends TestCase
     public function test_invalid_calendar_dates_are_not_silently_normalized(): void
     {
         $this->upload('donations', implode("\n", [
-            'transaction_id,gifted_at,gross_amount,currency,status,refunded_amount,campaign_code,anonymous',
-            'D001,2026-02-30T10:15:00+00:00,10.00,GBP,paid,0.00,GENERAL,false',
+            'transaction_id,gifted_at,gross_amount,currency,status,refunded_amount,campaign_code',
+            'D001,2026-02-30T10:15:00+00:00,10.00,GBP,paid,0.00,GENERAL',
             '',
         ]));
 
@@ -205,8 +202,8 @@ class MappingValidationTest extends TestCase
         config(['reconciliation.max_absolute_money_minor_units' => 10_000]);
 
         $this->upload('donations', implode("\n", [
-            'transaction_id,gifted_at,gross_amount,currency,status,refunded_amount,campaign_code,anonymous',
-            'D001,2026-09-02T10:15:00+00:00,100.01,GBP,paid,0.00,GENERAL,false',
+            'transaction_id,gifted_at,gross_amount,currency,status,refunded_amount,campaign_code',
+            'D001,2026-09-02T10:15:00+00:00,100.01,GBP,paid,0.00,GENERAL',
             '',
         ]));
 
