@@ -420,13 +420,8 @@
             @php
                 $batch = $imports->get($type);
                 $fixture = $fixtureReports[$type];
-                $statusClasses = match ($batch?->status) {
-                    \App\Models\ImportBatch::STATUS_VALIDATED => 'border-emerald-200 bg-emerald-50 text-emerald-900',
-                    \App\Models\ImportBatch::STATUS_VALIDATION_FAILED => 'border-red-200 bg-red-50 text-red-900',
-                    default => 'border-amber-200 bg-amber-50 text-amber-950',
-                };
             @endphp
-            <article class="rounded-xl border border-stone-200 bg-white p-6">
+            <article id="report-{{ $type }}" data-report-card="{{ $type }}" class="rounded-xl border border-stone-200 bg-white p-6">
                 <h2 class="text-lg font-semibold text-stone-900">{{ $label }}</h2>
                 <p class="mt-2 text-sm text-stone-600">{{ $description }}</p>
 
@@ -434,29 +429,16 @@
                     Download sample · {{ number_format($fixture['expected_rows']) }} rows
                 </a>
 
-                @if ($batch)
-                    <div class="mt-5 rounded-lg border p-4 {{ $statusClasses }}">
-                        <p class="text-sm font-medium">Loaded {{ number_format($batch->total_rows) }} rows</p>
-                        <p class="mt-1 text-xs">{{ $batch->original_filename }} · {{ str_replace('_', ' ', $batch->status) }}</p>
-                        @if ($batch->mappingProfile)
-                            <p class="mt-1 text-xs">{{ $batch->mappingProfile->adapter_profile }} · mapping v{{ $batch->mappingProfile->version }}</p>
-                        @endif
-                        @if ($batch->validated_at)
-                            <p class="mt-1 text-xs">{{ number_format($batch->valid_rows) }} valid · {{ number_format($batch->rejected_rows) }} rejected</p>
-                        @endif
-                        @if ($batch->materialized_at)
-                            <p class="mt-1 text-xs">
-                                {{ number_format($batch->materialized_rows) }} source rows materialized
-                                @if ($batch->duplicate_rows > 0)
-                                    · {{ number_format($batch->duplicate_rows) }} duplicate occurrence
-                                @endif
-                            </p>
-                        @endif
-                        <a class="mt-3 inline-flex text-sm font-medium underline" href="{{ route('try.imports.show', $batch) }}">Review loaded rows</a>
-                    </div>
-                @else
-                    @include('public.upload-form', ['uploadUrl' => route('try.imports.store')])
-                @endif
+                <div data-report-state>
+                    @if ($batch)
+                        @include('public.report-state')
+                    @endif
+                </div>
+                <div data-report-upload @if ($batch) hidden @endif>
+                    @unless ($batch)
+                        @include('public.upload-form', ['uploadUrl' => route('try.imports.store')])
+                    @endunless
+                </div>
             </article>
         @endforeach
     </div>

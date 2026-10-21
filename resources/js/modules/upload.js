@@ -20,11 +20,11 @@ function formatBytes(bytes) {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-export function initUpload(root = document) {
-    root.querySelectorAll('[data-upload-form]').forEach((form) => initUploadForm(form));
+export function initUpload(root = document, { onUploaded = null } = {}) {
+    root.querySelectorAll('[data-upload-form]').forEach((form) => initUploadForm(form, onUploaded));
 }
 
-function initUploadForm(form) {
+function initUploadForm(form, onUploaded) {
 
     const dropZone = form.querySelector('[data-drop-zone]');
     const fileInput = form.querySelector('[data-file-input]');
@@ -155,6 +155,21 @@ function initUploadForm(form) {
             });
 
             const payload = await response.json().catch(() => ({}));
+
+            if (onUploaded && (response.ok || response.status === 409) && payload?.data?.redirect) {
+                // Keep an accessible way to reopen the persisted upload even if loading the modal fails.
+                const state = form.closest('[data-report-card]')?.querySelector('[data-report-state]');
+                if (state) {
+                    const link = document.createElement('a');
+                    link.href = payload.data.redirect;
+                    link.textContent = 'Review mapping';
+                    link.className = 'mt-4 inline-flex text-sm font-medium text-emerald-800 underline';
+                    link.setAttribute('data-import-open', '');
+                    state.replaceChildren(link);
+                }
+                await onUploaded(payload.data.redirect, submitButton, true);
+                return;
+            }
 
             if (response.status === 409 && payload?.data?.redirect) {
                 setBusy(submitButton, 'Opening import…');

@@ -154,7 +154,7 @@ test('changing an upload from uploading to opening preserves its original state 
     assert.equal(button.childNodes[0], originalLabel);
 });
 
-function uploadFixture() {
+function uploadFixture(onUploaded = null) {
     const elements = new Map(['drop-zone', 'file-input', 'file-label', 'upload-error', 'upload-progress', 'upload-submit']
         .map((key) => [`[data-${key}]`, new Element()]));
     const button = elements.get('[data-upload-submit]');
@@ -163,8 +163,9 @@ function uploadFixture() {
     const form = new Element();
     form.dataset.uploadUrl = 'https://demo.test/try/imports';
     form.querySelector = (selector) => elements.get(selector);
+    form.closest = () => null;
     globalThis.FormData = class { constructor(source) { this.source = source; } };
-    initUpload({ querySelectorAll: () => [form] });
+    initUpload({ querySelectorAll: () => [form] }, { onUploaded });
     setup();
     return { form, button, error: elements.get('[data-upload-error]') };
 }
@@ -215,3 +216,16 @@ test('upload failure restores the button and permits a retry', async () => {
     await new Promise(setImmediate);
     assert.equal(requests, 2);
 });
+
+for (const status of [201, 409]) {
+    test(`upload response ${status} opens the modal and restores page controls without navigating`, async () => {
+        const opened = [];
+        const { form, button } = uploadFixture(async (...args) => opened.push(args));
+        window.location.assign = () => assert.fail('Modal uploads must stay on the current page');
+        globalThis.fetch = async () => ({ status, ok: status === 201, json: async () => ({ data: { redirect: '/try/imports/1' } }) });
+        form.dispatchEvent(new Event('submit', { cancelable: true }));
+        await new Promise(setImmediate);
+        assert.deepEqual(opened, [['/try/imports/1', button, true]]);
+        assert.equal(button.disabled, false);
+    });
+}

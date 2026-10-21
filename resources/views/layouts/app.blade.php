@@ -33,6 +33,7 @@
         <p class="sr-only" role="status" data-action-status></p>
         @yield('content')
     </main>
+    @include('public.import-modal')
 
     <footer class="mt-16 border-t border-stone-200 bg-white">
         <div class="mx-auto max-w-5xl px-4 py-8 text-sm text-stone-500 sm:px-6">

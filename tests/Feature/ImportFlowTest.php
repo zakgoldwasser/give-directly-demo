@@ -55,6 +55,7 @@ class ImportFlowTest extends TestCase
         $this->assertNull($batch->context);
         $this->get(route('try.imports.show', $batch))->assertOk();
         $this->get(route('try.show'))->assertOk()->assertDontSee('Public demo uploads must match');
+        $this->get(route('landing'))->assertOk()->assertSee('Review mapping')->assertSee(route('try.imports.show', $batch), false);
     }
 
     public function test_homepage_uploads_share_a_workspace_and_retries_are_idempotent(): void

@@ -228,6 +228,43 @@ class MappingValidationTest extends TestCase
         $this->assertDatabaseCount('mapping_profiles', 0);
     }
 
+    public function test_modal_returns_separate_mapping_and_preview_panels_with_escaped_source_values(): void
+    {
+        $this->upload('donations', "Gift ID,Gross\n<script>alert(1)</script>,10.00\n");
+        $batch = ImportBatch::query()->firstOrFail();
+        $response = $this->getJson(route('try.imports.show', $batch))->assertOk()
+            ->assertJsonPath('data.status', ImportBatch::STATUS_MAPPING_REQUIRED);
+        $html = $response->json('data.html');
+        $this->assertStringContainsString('role="tablist"', $html);
+        $this->assertStringContainsString('data-import-panel="mapping"', $html);
+        $this->assertStringContainsString('data-import-panel="preview" tabindex="0" hidden', $html);
+        $this->assertStringContainsString('data-mapping-form', $html);
+        $this->assertStringContainsString('&lt;script&gt;alert(1)&lt;/script&gt;', $html);
+        $this->assertStringNotContainsString('<script>alert(1)</script>', $html);
+        $this->assertStringNotContainsString('<!DOCTYPE', $html);
+        $this->assertStringContainsString('Review mapping', $response->json('data.card_html'));
+        $this->get(route('try.imports.show', $batch))->assertOk()->assertSee('Back to report set');
+        $this->flushSession();
+        $this->post(route('try.start'), ['intent' => 'scenarios']);
+        $this->getJson(route('try.imports.show', $batch))->assertNotFound();
+    }
+
+    public function test_modal_can_reload_updated_validation_and_report_card_after_saving(): void
+    {
+        $this->upload('donations', "Gift ID,gifted_at,gross_amount,currency,status,refunded_amount,campaign_code\nCUSTOM01,2026-09-02T10:15:00+00:00,25.00,GBP,paid,0.00,GENERAL\n");
+        $batch = ImportBatch::query()->firstOrFail();
+        $mapping = array_combine(
+            ['transaction_id', 'gifted_at', 'gross_amount', 'currency', 'status', 'refunded_amount', 'campaign_code'],
+            ['Gift ID', 'gifted_at', 'gross_amount', 'currency', 'status', 'refunded_amount', 'campaign_code'],
+        );
+        $this->postJson(route('try.imports.mapping.store', $batch), ['mapping' => $mapping])
+            ->assertOk()->assertJsonPath('data.status', ImportBatch::STATUS_VALIDATED);
+        $response = $this->getJson(route('try.imports.show', $batch))->assertOk();
+        $this->assertStringContainsString('Validation passed for all 1 rows', $response->json('data.html'));
+        $this->assertStringContainsString('data-report-status="validated"', $response->json('data.card_html'));
+        $this->assertStringContainsString('1 valid', $response->json('data.card_html'));
+    }
+
     private function upload(string $reportType, string $contents): void
     {
         $this->post(route('try.imports.store'), [

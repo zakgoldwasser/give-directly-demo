@@ -69,7 +69,7 @@ class ImportController extends Controller
         return redirect()->route('try.imports.show', $batch);
     }
 
-    public function show(Request $request, string $import): View
+    public function show(Request $request, string $import): View|JsonResponse
     {
         $batch = $this->resolveBatch($request, $import);
 
@@ -98,7 +98,7 @@ class ImportController extends Controller
                 ->get();
         }
 
-        return view('public.import', [
+        $data = [
             'batch' => $batch,
             'previewRows' => $previewRows,
             'headers' => $headers,
@@ -107,7 +107,19 @@ class ImportController extends Controller
             'duplicateWarning' => $request->session()->pull('import_duplicate_warning'),
             'mappingSaved' => $request->session()->pull('mapping_saved'),
             'minutesRemaining' => $request->attributes->get('guest_workspace')->minutesRemaining(),
-        ]);
+        ];
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => [
+                'id' => $batch->id,
+                'report_type' => $batch->report_type,
+                'status' => $batch->status,
+                'html' => view('public.import-content', [...$data, 'modal' => true])->render(),
+                'card_html' => view('public.report-state', ['batch' => $batch])->render(),
+            ]]);
+        }
+
+        return view('public.import', $data);
     }
 
     private function resolveBatch(Request $request, string $import): ImportBatch

@@ -40,10 +40,20 @@
                 'payouts' => ['Payout report', 'Payout totals and their donation, fee, refund, and reversal components.'],
                 'crm' => ['CRM snapshot', 'Existing donation records and identifiers used to find matches.'],
             ] as $type => [$title, $description])
-                <article class="rounded-xl border border-stone-200 bg-white p-5">
+                <article id="report-{{ $type }}" data-report-card="{{ $type }}" class="rounded-xl border border-stone-200 bg-white p-5">
                     <h3 class="font-semibold text-stone-900">{{ $title }}</h3>
                     <p class="mt-2 text-sm text-stone-600">{{ $description }}</p>
-                    @include('public.upload-form', ['uploadUrl' => route('try.upload')])
+                    @php($batch = $imports->get($type))
+                    <div data-report-state>
+                        @if ($batch)
+                            @include('public.report-state')
+                        @endif
+                    </div>
+                    <div data-report-upload @if ($batch) hidden @endif>
+                        @unless ($batch)
+                            @include('public.upload-form', ['uploadUrl' => route('try.upload')])
+                        @endunless
+                    </div>
                 </article>
             @endforeach
         </div>
