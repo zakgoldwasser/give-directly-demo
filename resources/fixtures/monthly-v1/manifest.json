@@ -108,5 +108,19 @@
       "unchanged": 3,
       "held": 0
     }
+  },
+  "preview_notes": {
+    "payouts": {
+      "M003": "GBP 75.00 is also credited in the payout, supporting the donation amount for D003.",
+      "M007": "The GBP 10.00 fee reduces GBP 540.00 of donations to the reported GBP 530.00 payout. There is no unexplained difference."
+    },
+    "donations": {
+      "D002": "New donation: D002 is absent from the CRM snapshot and is proposed for creation.",
+      "D012": "New donation: D012 is absent from the CRM snapshot and is proposed for creation.",
+      "D003": "The partner reports GBP 75.00; CRM002 has GBP 70.00. This donation needs an amount correction."
+    },
+    "crm": {
+      "CRM002": "Existing donation D003 has GBP 70.00 here, compared with GBP 75.00 in donations.csv."
+    }
   }
 }

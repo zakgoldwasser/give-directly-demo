@@ -13,12 +13,12 @@
             Load a controlled report set, review proposed CRM creates and updates, resolve exceptions, and export a traceable import package.
         </p>
         <div id="try" class="mt-8 flex flex-col gap-3 sm:flex-row">
-            <form method="POST" action="{{ route('try.start') }}">
+            <form method="POST" action="{{ route('try.start') }}" data-scenario-form data-scenario-title="Update this month’s donations">
                 @csrf
                 <input type="hidden" name="intent" value="guided">
                 <input type="hidden" name="scenario_id" value="monthly_v1">
                 <button class="w-full rounded-lg bg-emerald-700 px-5 py-3 font-medium text-white hover:bg-emerald-800 sm:w-auto">
-                    Start guided demo
+                    <span data-scenario-label>Start guided demo</span>
                 </button>
             </form>
             <a href="#sample-scenarios" class="rounded-lg border border-stone-300 bg-white px-5 py-3 text-center font-medium text-stone-800 hover:bg-stone-50">Explore scenarios</a>
@@ -27,7 +27,7 @@
 
     <section id="sample-scenarios" class="mt-12 scroll-mt-6" aria-labelledby="sample-scenarios-heading">
         <h2 id="sample-scenarios-heading" class="text-2xl font-semibold text-stone-900">Choose a sample dataset</h2>
-        <p class="mt-2 mb-6 text-stone-600">Click a card to load all three CSVs and see the results. No downloads or uploads needed.</p>
+        <p class="mt-2 mb-6 text-stone-600">Preview the source CSVs or load all three reports. You can keep exploring the previews while your sample loads.</p>
         @if ($errors->any())
             <p class="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-900" role="alert">{{ $errors->first() }}</p>
         @endif

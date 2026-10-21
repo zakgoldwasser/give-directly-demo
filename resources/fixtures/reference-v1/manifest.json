@@ -88,5 +88,37 @@
             "update": 4,
             "held": 4
         }
+    },
+    "preview_notes": {
+        "payouts": {
+            "C013": "P002 has GBP 55.00 in credit and a GBP 2.00 fee but reports GBP 50.00. The unexplained difference is GBP 3.00.",
+            "C014": "This GBP 2.00 fee does not fully explain the reported payout.",
+            "C011": "A GBP 50.00 refund deduction corresponds to D008.",
+            "C016": "The pending payout includes a GBP 1.00 fee.",
+            "C015": "P003 balances arithmetically but is pending, not sent.",
+            "C010": "A GBP 20.00 fee is an expected deduction in the balanced P001 payout.",
+            "C012": "A GBP 80.00 refund deduction corresponds to D010. The full P001 component total balances to GBP 840.00."
+        },
+        "donations": {
+            "D012": "The linked payout is pending, so this donation stays held.",
+            "D001": "This identical source row appears twice and represents one logical gift.",
+            "D011": "The linked payout has a GBP 3.00 difference and holds this donation.",
+            "D005": "Two CRM records claim this transaction, so it stays held.",
+            "D002": "This donation is missing from the CRM and can be proposed for creation.",
+            "D003": "GBP 75.00 here differs from GBP 70.00 in CRM002.",
+            "D010": "A GBP 80.00 full refund has not reached the CRM snapshot.",
+            "D007": "A supported CRM candidate lacks transaction identifiers and needs a review decision.",
+            "D008": "A GBP 50.00 partial refund has not reached the CRM snapshot.",
+            "D004": "The donation is pending and has no supporting sent payout, so it stays held.",
+            "D006": "NEW-PROGRAM needs a destination campaign mapping."
+        },
+        "crm": {
+            "CRM005": "Missing transaction identifiers: the donor, GBP 90.00 amount, and date support a candidate match to D007.",
+            "CRM004": "A second CRM record claims the same donation and external gift key.",
+            "CRM002": "D003 has GBP 70.00 here versus GBP 75.00 in the source donation.",
+            "CRM003": "This record and CRM004 both claim donation D005.",
+            "CRM006": "D008 is missing its partial refund and corresponding status update.",
+            "CRM008": "D010 is missing its full refund and corresponding status update."
+        }
     }
 }

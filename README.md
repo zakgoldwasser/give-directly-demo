@@ -35,7 +35,9 @@ Open [http://localhost](http://localhost).
 
 ## Sample datasets
 
-The landing page and workspace offer four clickable sample cards. Each explains what its CSVs contain and what it demonstrates. Selecting a card loads the donation, payout, and CRM reports into a fresh workspace and runs reconciliation without downloading or uploading files. The guided-demo button starts with the monthly example; reset reloads the selected sample. Optional report downloads remain available.
+The landing page and workspace offer four sample cards. Each explains what its CSVs contain and what it demonstrates, with separate **View sample CSVs** and **Load this sample** controls. Loading populates a fresh workspace and runs reconciliation without downloading or uploading files. The guided-demo button starts with the monthly example; reset reloads the selected sample. Optional report downloads remain available.
+
+CSV previews are embedded from the checksum-verified source fixtures, with Donations, Payouts, and CRM tabs. Scenario annotations highlight important rows and explain why they matter; the **Only show highlighted rows** filter retains the original row numbers and values. Previewing does not create a workspace or make a network request. With JavaScript enabled, loading uses a background request and leaves preview controls active. If a preview is open when loading finishes, it stays open and offers **View reconciliation**. Otherwise the browser opens the results automatically. Loading errors keep the previews usable and allow a retry; ordinary form navigation remains the fallback without JavaScript.
 
 | Sample | CSV contents | Demonstrates |
 | --- | --- | --- |

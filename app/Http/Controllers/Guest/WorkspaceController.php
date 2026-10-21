@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Guest;
 
 use App\Domain\Reconciliation\Services\ApprovalService;
+use App\Domain\Reconciliation\Services\CsvParserService;
 use App\Domain\Reconciliation\Services\ExportService;
 use App\Domain\Reconciliation\Services\ReferenceFixtureCatalog;
 use App\Domain\Reconciliation\Services\ReviewDecisionService;
@@ -14,6 +15,7 @@ use App\Models\WorkspaceOperation;
 use App\Services\Operations\WorkspaceOperationService;
 use App\Services\ReferenceScenarioService;
 use App\Services\WorkspaceService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -30,7 +32,7 @@ class WorkspaceController extends Controller
         private readonly WorkspaceOperationService $operations,
     ) {}
 
-    public function start(Request $request): RedirectResponse
+    public function start(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'intent' => ['required', 'in:guided,scenarios'],
@@ -43,10 +45,14 @@ class WorkspaceController extends Controller
             $this->referenceScenario->load($workspace, $validated['scenario_id'] ?? 'reference_v1');
         }
 
+        if ($request->expectsJson()) {
+            return response()->json(['data' => ['redirect' => route('try.show')]]);
+        }
+
         return redirect()->route('try.show');
     }
 
-    public function show(Request $request): View
+    public function show(Request $request, CsvParserService $parser): View
     {
         /** @var GuestWorkspace $workspace */
         $workspace = $request->attributes->get('guest_workspace');
@@ -108,6 +114,7 @@ class WorkspaceController extends Controller
             'crmSnapshotGeneratedAt' => $imports->get('crm')?->context['generated_at'] ?? null,
             'fixtureReports' => $fixtures->reports(),
             'sampleScenarios' => $this->fixtures->choices(),
+            'samplePreviews' => $this->fixtures->previews($parser),
             'selectedScenarioId' => $scenarioId,
             'selectedScenario' => $sampleLoaded ? ($this->fixtures->choices()[$scenarioId] ?? null) : null,
             'maxCsvSizeMb' => round(((int) config('reconciliation.max_csv_size_bytes')) / 1024 / 1024, 1),

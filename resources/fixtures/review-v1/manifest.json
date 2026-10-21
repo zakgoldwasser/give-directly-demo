@@ -108,5 +108,22 @@
       "unchanged": 2,
       "held": 1
     }
+  },
+  "preview_notes": {
+    "payouts": {
+      "R001": "There is one GBP 100.00 payout credit for D001, despite the repeated donation row.",
+      "R007": "GBP 635.00 in unique donation credits minus the GBP 10.00 fee equals the reported GBP 625.00. Payouts balance in this scenario."
+    },
+    "donations": {
+      "D006": "NEW-PROGRAM has no campaign mapping yet. Choose its destination campaign during review.",
+      "D005": "Two CRM records claim this transaction. The donation stays excluded until that conflict is resolved outside this demo.",
+      "D007": "A possible CRM match has the same donor, amount, and date but lacks transaction identifiers. Confirm the supported match during review.",
+      "D001": "This exact donation row appears twice. Both source rows are retained, but they represent one logical gift."
+    },
+    "crm": {
+      "CRM003": "CRM003 and CRM004 both claim D005 and the same external gift key. The tool will not choose between them automatically.",
+      "CRM004": "A second CRM record claims D005. It is a different CRM record, unlike the repeated identical source row for D001.",
+      "CRM005": "The external gift key and transaction ID are blank. Donor DONOR-007, GBP 90.00, and the date support a candidate match to D007."
+    }
   }
 }

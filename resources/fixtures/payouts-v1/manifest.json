@@ -108,5 +108,24 @@
       "unchanged": 3,
       "held": 1
     }
+  },
+  "preview_notes": {
+    "payouts": {
+      "B006": "Expected deduction: a GBP 20.00 fee.",
+      "B008": "Expected deduction: the GBP 80.00 full refund for D010. Together, GBP 665.00 in credits minus GBP 150.00 in deductions balances to GBP 515.00.",
+      "U002": "This GBP 2.00 fee does not fully explain the difference between the GBP 55.00 credit and reported GBP 50.00 payout.",
+      "B007": "Expected deduction: the GBP 50.00 partial refund for D008.",
+      "U001": "GBP 55.00 in credit minus the GBP 2.00 fee gives GBP 53.00, but this payout reports GBP 50.00: a GBP 3.00 unexplained difference."
+    },
+    "donations": {
+      "D008": "GBP 50.00 of this GBP 200.00 donation was refunded. Its payout includes that deduction.",
+      "D010": "This GBP 80.00 donation was fully refunded. Its credit and refund cancel out in the payout.",
+      "D011": "The linked payout has an unexplained GBP 3.00 difference, so this donation stays held."
+    },
+    "crm": {
+      "CRM011": "This record matches D011, but the payout discrepancy still prevents an approved action for the gift.",
+      "CRM008": "D010 still shows no refund and paid status. Review the proposed full-refund update.",
+      "CRM006": "D008 still shows no refund and paid status. Review the proposed partial-refund update."
+    }
   }
 }

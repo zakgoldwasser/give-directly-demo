@@ -16,6 +16,32 @@ class ReferenceFixtureCatalog
         return config('reconciliation.sample_scenarios', []);
     }
 
+    /** @return array<string, array<string, array<string, mixed>>> */
+    public function previews(CsvParserService $parser): array
+    {
+        $previews = [];
+
+        foreach (array_keys($this->choices()) as $scenarioId) {
+            $catalog = $this->forScenario($scenarioId);
+            $notes = $catalog->scenario()['preview_notes'] ?? [];
+
+            foreach (['donations' => 'transaction_id', 'payouts' => 'component_id', 'crm' => 'crm_record_id'] as $type => $key) {
+                $parsed = $parser->parse($catalog->path($type));
+                $previews[$scenarioId][$type] = [
+                    'filename' => $catalog->report($type)['filename'],
+                    'headers' => $parsed['headers'],
+                    'rows' => array_map(fn (array $row, int $index): array => [
+                        'number' => $index + 1,
+                        'values' => $row,
+                        'note' => $notes[$type][$row[$key]] ?? null,
+                    ], $parsed['rows'], array_keys($parsed['rows'])),
+                ];
+            }
+        }
+
+        return $previews;
+    }
+
     public function forScenario(string $scenarioId): self
     {
         if (! array_key_exists($scenarioId, $this->choices())) {

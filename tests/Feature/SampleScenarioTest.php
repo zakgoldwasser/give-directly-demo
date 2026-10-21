@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Reconciliation\Services\CsvParserService;
 use App\Domain\Reconciliation\Services\ReferenceFixtureCatalog;
 use App\Models\ConfirmationBatch;
 use App\Models\ExportBatch;
@@ -181,5 +182,62 @@ class SampleScenarioTest extends TestCase
     public function test_unknown_sample_download_is_not_found(): void
     {
         $this->get(route('reference-fixtures.download', ['reportType' => 'donations', 'scenario_id' => '../reference-v1']))->assertNotFound();
+    }
+
+    public function test_background_loading_returns_a_workspace_link_after_reconciliation_is_complete(): void
+    {
+        $this->postJson(route('try.start'), ['intent' => 'guided', 'scenario_id' => 'monthly_v1'])
+            ->assertOk()->assertJsonPath('data.redirect', route('try.show'));
+
+        $workspace = app(WorkspaceService::class)->resolveActive();
+        $this->assertSame(3, $workspace->importBatches()->where('status', ImportBatch::STATUS_VALIDATED)->count());
+        $this->assertEquals(['create' => 2, 'update' => 1, 'unchanged' => 3, 'held' => 0], $workspace->reconciliationRuns()->sole()->outcome_counts);
+        $this->get(route('try.show'))->assertOk()->assertSee('Update this month’s donations');
+    }
+
+    public function test_unavailable_background_loading_returns_json_without_creating_a_workspace(): void
+    {
+        config(['reconciliation.new_workspaces_enabled' => false]);
+
+        $this->postJson(route('try.start'), ['intent' => 'guided', 'scenario_id' => 'monthly_v1'])
+            ->assertStatus(503)->assertJsonPath('error.code', 'NEW_WORKSPACES_DISABLED');
+        $this->assertDatabaseCount('guest_workspaces', 0);
+        $this->get(route('landing'))->assertOk()->assertSee('View sample CSVs');
+    }
+
+    public function test_all_source_previews_are_embedded_without_creating_a_workspace_and_preserve_csv_values(): void
+    {
+        $response = $this->get(route('landing'))->assertOk()
+            ->assertSee('Only show highlighted rows')
+            ->assertSee('Why it matters');
+        $previews = $response->viewData('samplePreviews');
+        $catalog = app(ReferenceFixtureCatalog::class);
+        $parser = app(CsvParserService::class);
+
+        $this->assertCount(4, $previews);
+        foreach ($previews as $scenarioId => $reports) {
+            $this->assertSame(['donations', 'payouts', 'crm'], array_keys($reports));
+            $scenario = $catalog->forScenario($scenarioId);
+            foreach ($reports as $type => $report) {
+                $parsed = $parser->parse($scenario->path($type));
+                $this->assertSame($parsed['headers'], $report['headers']);
+                $this->assertSame($parsed['rows'], array_column($report['rows'], 'values'));
+                $this->assertSame(range(1, count($parsed['rows'])), array_column($report['rows'], 'number'));
+                $this->assertNotEmpty(array_filter(array_column($report['rows'], 'note')));
+                $identifier = ['donations' => 'transaction_id', 'payouts' => 'component_id', 'crm' => 'crm_record_id'][$type];
+                $this->assertSame([], array_diff(
+                    array_keys($scenario->scenario()['preview_notes'][$type]),
+                    array_column($parsed['rows'], $identifier),
+                ));
+            }
+        }
+        $monthlyGifts = collect($previews['monthly_v1']['donations']['rows'])->keyBy('values.transaction_id');
+        $this->assertNull($monthlyGifts['D001']['note']);
+        $this->assertStringContainsString('GBP 75.00', $monthlyGifts['D003']['note']);
+        $this->assertStringContainsString('GBP 70.00', $monthlyGifts['D003']['note']);
+        $repeatedGift = collect($previews['review_v1']['donations']['rows'])->filter(fn (array $row): bool => $row['values']['transaction_id'] === 'D001');
+        $this->assertCount(2, $repeatedGift);
+        $this->assertCount(2, $repeatedGift->filter(fn (array $row): bool => $row['note'] !== null));
+        $this->assertDatabaseCount('guest_workspaces', 0);
     }
 }
