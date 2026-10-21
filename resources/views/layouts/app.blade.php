@@ -17,7 +17,7 @@
             </a>
             <nav class="flex flex-wrap items-center gap-4 text-sm text-stone-600">
                 <a href="{{ route('landing') }}#how-it-works" class="hover:text-emerald-800">How it works</a>
-                <a href="{{ route('landing') }}#try" class="hover:text-emerald-800">Try the tool</a>
+                <a href="{{ route('landing') }}#sample-scenarios" class="hover:text-emerald-800">Try the tool</a>
                 @if(config('reconciliation.github_url') !== '#')
                     <a href="{{ config('reconciliation.github_url') }}" class="hover:text-emerald-800" target="_blank" rel="noopener noreferrer">GitHub</a>
                 @else

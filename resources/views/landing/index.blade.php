@@ -9,21 +9,17 @@
         <h1 class="mt-3 text-4xl font-semibold tracking-tight text-stone-900 sm:text-5xl">
             Reconcile partner donations, payouts, and CRM records with inspectable evidence.
         </h1>
-        <p class="mt-5 text-lg text-stone-600">
-            Load a controlled report set, review proposed CRM creates and updates, resolve exceptions, and export a traceable import package.
-        </p>
-        <div id="try" class="mt-8 flex flex-col gap-3 sm:flex-row">
-            <form method="POST" action="{{ route('try.start') }}" data-scenario-form data-scenario-title="Update this month’s donations">
-                @csrf
-                <input type="hidden" name="intent" value="guided">
-                <input type="hidden" name="scenario_id" value="monthly_v1">
-                <button class="w-full rounded-lg bg-emerald-700 px-5 py-3 font-medium text-white hover:bg-emerald-800 sm:w-auto">
-                    <span data-scenario-label>Start guided demo</span>
-                </button>
-            </form>
-            <a href="#sample-scenarios" class="rounded-lg border border-stone-300 bg-white px-5 py-3 text-center font-medium text-stone-800 hover:bg-stone-50">Explore scenarios</a>
-        </div>
     </div>
+
+    <ul id="how-it-works" class="mt-8 grid scroll-mt-6 list-disc grid-cols-1 gap-x-8 gap-y-5 pl-5 sm:grid-cols-2 lg:grid-cols-3 text-sm leading-6 text-stone-600 marker:text-emerald-700">
+        <li><strong class="font-semibold text-stone-900">Bring three CSVs together:</strong> donation reports, payout reports, and existing CRM records.</li>
+        <li><strong class="font-semibold text-stone-900">Organize the data:</strong> map each file’s columns into a consistent format while preserving the original rows.</li>
+        <li><strong class="font-semibold text-stone-900">Check for problems:</strong> flag missing information, invalid values, duplicate rows, and conflicting records.</li>
+        <li><strong class="font-semibold text-stone-900">Match donations to CRM records:</strong> use identifiers to find existing donations and flag uncertain matches for review.</li>
+        <li><strong class="font-semibold text-stone-900">Check payout totals:</strong> compare reported totals with donation, fee, refund, and reversal components to identify differences.</li>
+        <li><strong class="font-semibold text-stone-900">Sort the results:</strong> show which donations need to be added, updated, left unchanged, or held for review.</li>
+        <li><strong class="font-semibold text-stone-900">Guide your review:</strong> resolve campaign mappings and confirm supported matches, with evidence behind each decision.</li>
+    </ul>
 
     <section id="sample-scenarios" class="mt-12 scroll-mt-6" aria-labelledby="sample-scenarios-heading">
         <h2 id="sample-scenarios-heading" class="text-2xl font-semibold text-stone-900">Choose a sample dataset</h2>
@@ -33,24 +29,6 @@
         @endif
         @include('public.scenario-cards', ['sampleScenarios' => $sampleScenarios, 'selectedScenarioId' => null])
     </section>
-
-    <div id="how-it-works" class="mt-16 grid gap-6 md:grid-cols-3">
-        <article class="rounded-xl border border-stone-200 bg-white p-6">
-            <p class="text-sm font-semibold text-emerald-700">1 · Load reports</p>
-            <h2 class="mt-2 text-xl font-semibold text-stone-900">Establish source context</h2>
-            <p class="mt-3 text-stone-600">Import partner donations, payout components, and one CRM snapshot with explicit coverage and versions.</p>
-        </article>
-        <article class="rounded-xl border border-stone-200 bg-white p-6">
-            <p class="text-sm font-semibold text-emerald-700">2 · Review evidence</p>
-            <h2 class="mt-2 text-xl font-semibold text-stone-900">Resolve exceptions</h2>
-            <p class="mt-3 text-stone-600">Inspect identity matches, field differences, campaign mappings, payout arithmetic, and blocking evidence.</p>
-        </article>
-        <article class="rounded-xl border border-stone-200 bg-white p-6">
-            <p class="text-sm font-semibold text-emerald-700">3 · Export and check</p>
-            <h2 class="mt-2 text-xl font-semibold text-stone-900">Prepare reviewed changes</h2>
-            <p class="mt-3 text-stone-600">Create a versioned import package, then compare its expectations with a refreshed CRM snapshot.</p>
-        </article>
-    </div>
 
     <div class="mt-12 rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-950">
         <h2 class="font-semibold">Demonstration boundary</h2>

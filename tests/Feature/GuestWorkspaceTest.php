@@ -17,8 +17,8 @@ class GuestWorkspaceTest extends TestCase
         $response = $this->get(route('landing'));
 
         $response->assertOk();
-        $response->assertSee('Start guided demo', false);
-        $response->assertSee('Explore scenarios', false);
+        $response->assertSee('Choose a sample dataset', false);
+        $response->assertSee('View sample CSVs', false);
         $response->assertDontSee('Log in', false);
         $response->assertDontSee('Sign up', false);
     }
