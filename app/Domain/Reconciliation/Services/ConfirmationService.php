@@ -83,7 +83,9 @@ class ConfirmationService
                 ConfirmationResult::OUTCOME_DUPLICATE => 0,
                 ConfirmationResult::OUTCOME_CANNOT_VERIFY => 0,
             ];
-            $approvals = $lockedExport->run->approvals()->orderBy('transaction_id')->get();
+            $approvals = $lockedExport->run->approvals()
+                ->when(isset($lockedExport->manifest['approval_ids']), fn ($query) => $query->whereIn('id', $lockedExport->manifest['approval_ids']))
+                ->orderBy('transaction_id')->get();
 
             foreach ($approvals as $approval) {
                 $this->deadline->checkpoint();

@@ -74,8 +74,11 @@ class WorkspaceController extends Controller
             ->orderBy('id')
             ->get()
             ->keyBy('report_type');
-        $exportBatch = $workspace->exportBatches()->orderByDesc('generated_at')->first();
-        $confirmationBatch = $workspace->confirmationBatches()
+        $exportBatch = $workspace->exportBatches()
+            ->where(fn ($query) => $query->where('reconciliation_run_id', $reconciliationRun?->id)
+                ->orWhereHas('confirmations', fn ($query) => $query->where('verification_reconciliation_run_id', $reconciliationRun?->id)))
+            ->orderByDesc('generated_at')->first();
+        $confirmationBatch = $workspace->confirmationBatches()->where('export_batch_id', $exportBatch?->id)
             ->with(['results' => fn ($query) => $query->orderBy('transaction_id')])
             ->orderByDesc('completed_at')
             ->first();

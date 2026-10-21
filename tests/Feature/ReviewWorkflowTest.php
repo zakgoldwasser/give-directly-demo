@@ -86,6 +86,56 @@ class ReviewWorkflowTest extends TestCase
         $this->assertDatabaseCount('reconciliation_runs', 3);
     }
 
+    public function test_rejecting_candidates_and_undoing_reopens_review_without_reusing_an_old_run(): void
+    {
+        $this->post(route('try.start'), ['intent' => 'guided']);
+        $original = ReconciliationRun::query()->sole();
+        $this->get(route('try.show'))->assertSee('None of these');
+        $this->post(route('try.review.matches.store'), [
+            'run_id' => $original->id,
+            'transaction_id' => 'D007',
+            'crm_record_id' => '',
+        ])->assertSessionHasNoErrors();
+        $rejected = ReconciliationRun::query()->latest('sequence')->firstOrFail();
+        $gift = $rejected->gifts()->where('transaction_id', 'D007')->sole();
+        $this->assertSame(GiftReconciliation::MATCH_REJECTED, $gift->crm_match_state);
+        $this->assertSame(GiftReconciliation::OUTCOME_HELD, $gift->outcome);
+        $this->assertContains('CRM_CANDIDATES_REJECTED', $gift->issue_codes);
+        $this->assertNull($gift->matched_crm_record_id);
+        $this->get(route('try.show'))->assertSee('All candidates rejected; held for review')->assertSee('Undo match decision');
+
+        $this->post(route('try.review.matches.store'), [
+            'run_id' => $rejected->id, 'transaction_id' => 'D007', 'action' => 'undo',
+        ])->assertSessionHasNoErrors();
+        $undone = ReconciliationRun::query()->latest('sequence')->firstOrFail();
+        $this->assertSame(3, $undone->sequence);
+        $this->assertNotSame($original->id, $undone->id);
+        $this->assertSame(GiftReconciliation::MATCH_AMBIGUOUS, $undone->gifts()->where('transaction_id', 'D007')->sole()->crm_match_state);
+        $this->get(route('try.show'))->assertSee('None of these')->assertDontSee('All candidates rejected; held for review');
+        $this->get(route('try.history.runs.show', $undone))->assertSee('reject')->assertSee('undo');
+        $this->assertDatabaseCount('review_decisions', 2);
+
+        $this->post(route('try.review.matches.store'), [
+            'run_id' => $rejected->id, 'transaction_id' => 'D007', 'crm_record_id' => 'CRM005',
+        ])->assertSessionHasErrors('run_id');
+    }
+
+    public function test_undoing_a_confirmed_match_invalidates_approvals_and_preserves_the_original_decision(): void
+    {
+        $this->post(route('try.start'), ['intent' => 'guided']);
+        $this->post(route('try.review.matches.store'), ['transaction_id' => 'D007', 'crm_record_id' => 'CRM005']);
+        $confirmed = ReconciliationRun::query()->latest('sequence')->firstOrFail();
+        $this->post(route('try.approvals.store'), ['run_id' => $confirmed->id]);
+        $this->post(route('try.review.matches.store'), [
+            'run_id' => $confirmed->id, 'transaction_id' => 'D007', 'action' => 'undo',
+        ])->assertSessionHasNoErrors();
+        $latest = ReconciliationRun::query()->latest('sequence')->firstOrFail();
+        $this->assertSame(0, $latest->approvals()->count());
+        $this->assertSame(GiftReconciliation::MATCH_AMBIGUOUS, $latest->gifts()->where('transaction_id', 'D007')->sole()->crm_match_state);
+        $this->assertSame(GiftReconciliation::MATCH_MANUAL, $confirmed->gifts()->where('transaction_id', 'D007')->sole()->crm_match_state);
+        $this->assertDatabaseCount('review_decisions', 2);
+    }
+
     public function test_a_candidate_outside_the_current_evidence_is_rejected(): void
     {
         $this->post(route('try.start'), ['intent' => 'guided']);

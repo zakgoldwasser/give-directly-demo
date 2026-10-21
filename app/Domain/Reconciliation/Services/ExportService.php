@@ -23,6 +23,7 @@ class ExportService
 
     public function __construct(
         private readonly ProcessingDeadline $deadline,
+        private readonly ApprovalService $reviews,
     ) {}
 
     public function prepare(GuestWorkspace $workspace, string $runId): ExportBatch
@@ -46,15 +47,16 @@ class ExportService
                 ->with(['gift.activeVersion.sourceImportBatch', 'gift.activeVersion.sourceImportRow'])
                 ->orderBy('transaction_id')
                 ->get();
+            $exclusions = $this->reviews->exclusions($run);
             $eligible = $results->whereIn('outcome', [
                 GiftReconciliation::OUTCOME_CREATE,
                 GiftReconciliation::OUTCOME_UPDATE,
-            ])->filter(fn (GiftReconciliation $result): bool => $result->issue_codes === [])->values();
-            $approvals = $run->approvals()->orderBy('transaction_id')->get()->keyBy('gift_reconciliation_id');
+            ])->filter(fn (GiftReconciliation $result): bool => $result->issue_codes === [] && ! isset($exclusions[$result->transaction_id]))->values();
+            $approvals = $run->approvals()->whereNotIn('transaction_id', array_keys($exclusions))->orderBy('transaction_id')->get()->keyBy('gift_reconciliation_id');
 
-            if ($eligible->isEmpty() || $eligible->contains(fn (GiftReconciliation $result): bool => ! $approvals->has($result->id))) {
+            if (($eligible->isEmpty() && $exclusions === []) || $eligible->contains(fn (GiftReconciliation $result): bool => ! $approvals->has($result->id))) {
                 throw ValidationException::withMessages([
-                    'export' => 'Approve every eligible create and update in the current run before exporting.',
+                    'export' => 'Approve or exclude every eligible create and update in the current run before exporting.',
                 ]);
             }
 
@@ -153,6 +155,7 @@ class ExportService
      */
     private function files(GuestWorkspace $workspace, ReconciliationRun $run, Collection $results, Collection $approvals): array
     {
+        $exclusions = $this->reviews->exclusions($run);
         $creates = [];
         $updates = [];
         $held = [];
@@ -171,16 +174,16 @@ class ExportService
                 ];
             }
 
-            if ($result->outcome === GiftReconciliation::OUTCOME_HELD) {
+            if ($result->outcome === GiftReconciliation::OUTCOME_HELD || isset($exclusions[$result->transaction_id])) {
                 $version = $result->gift?->activeVersion;
                 $source = $version?->sourceImportBatch;
                 $sourceRow = $version?->sourceImportRow;
                 $held[] = [
                     (string) ($expected['external_gift_key'] ?? ''),
                     $result->transaction_id,
-                    implode(';', $result->issue_codes),
-                    'open',
-                    implode(';', $result->issue_codes),
+                    isset($exclusions[$result->transaction_id]) ? 'EXCLUDED_BY_REVIEWER' : implode(';', $result->issue_codes),
+                    isset($exclusions[$result->transaction_id]) ? 'excluded' : 'open',
+                    $exclusions[$result->transaction_id] ?? implode(';', $result->issue_codes),
                     $source === null || $sourceRow === null
                         ? ''
                         : $source->original_filename.':row '.$sourceRow->row_number,
@@ -340,13 +343,15 @@ class ExportService
                 'creates' => $eligible->where('outcome', GiftReconciliation::OUTCOME_CREATE)->count(),
                 'updates' => $eligible->where('outcome', GiftReconciliation::OUTCOME_UPDATE)->count(),
                 'unchanged' => $results->where('outcome', GiftReconciliation::OUTCOME_UNCHANGED)->count(),
-                'held' => $results->where('outcome', GiftReconciliation::OUTCOME_HELD)->count(),
+                'held' => $results->where('outcome', GiftReconciliation::OUTCOME_HELD)->count() + count($this->reviews->exclusions($run)),
                 'approved_actions' => $approvals->count(),
             ],
             'files' => collect($fileChecksums)->map(fn (string $checksum): array => [
                 'sha256' => $checksum,
             ])->all(),
             'updates' => $updates,
+            'approval_ids' => $approvals->pluck('id')->values()->all(),
+            'excluded_changes' => $this->reviews->exclusions($run),
         ];
     }
 

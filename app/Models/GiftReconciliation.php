@@ -26,6 +26,8 @@ class GiftReconciliation extends Model
 
     public const MATCH_AMBIGUOUS = 'ambiguous';
 
+    public const MATCH_REJECTED = 'candidates_rejected';
+
     public const MATCH_DUPLICATE_TARGET = 'duplicate_target';
 
     /** @var list<string> */

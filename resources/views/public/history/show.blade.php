@@ -94,7 +94,8 @@
                                 <td class="px-4 py-3 text-stone-600">{{ $decision->sequence }}</td>
                                 <td class="px-4 py-3 text-stone-600">{{ str_replace('_', ' ', $decision->decision_type) }}</td>
                                 <th class="px-4 py-3 font-medium text-stone-900" scope="row">{{ $decision->subject_key }}</th>
-                                <td class="px-4 py-3 text-stone-600">{{ $decision->selected_value }}</td>
+                                <td class="px-4 py-3 text-stone-600">{{ $decision->selected_value !== '' ? $decision->selected_value : ($decision->evidence['action'] ?? '') }}
+                                    @if (isset($decision->evidence['reason']))<span class="block text-xs">{{ $decision->evidence['reason'] }}</span>@endif</td>
                                 <td class="px-4 py-3 text-stone-600">{{ str_replace('_', ' ', $decision->actor_type) }} · {{ $decision->created_at->format('j M Y, H:i:s T') }}</td>
                             </tr>
                         @endforeach

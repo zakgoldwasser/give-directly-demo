@@ -15,6 +15,7 @@ class MatchService
      * @param  array<string, array<string, mixed>>  $payoutEvidence
      * @param  array<string, string>  $campaignMappings
      * @param  array<string, string>  $manualMatches
+     * @param  array<string, string>  $rejectedMatches
      * @return list<array<string, mixed>>
      */
     public function reconcile(
@@ -24,6 +25,7 @@ class MatchService
         array $campaignMappings,
         array $manualMatches = [],
         ?string $crmCoverageIssue = null,
+        array $rejectedMatches = [],
     ): array {
         $crm = $this->crmIndexes($crmRecords);
         $results = [];
@@ -79,7 +81,10 @@ class MatchService
                     $candidateIds = array_column($candidates, 'record_id');
                     $manualCrmId = $manualMatches[$transactionId] ?? null;
 
-                    if (is_string($manualCrmId) && in_array($manualCrmId, array_column($candidates, 'crm_record_id'), true)) {
+                    if (isset($rejectedMatches[$transactionId])) {
+                        $matchState = GiftReconciliation::MATCH_REJECTED;
+                        $issues[] = 'CRM_CANDIDATES_REJECTED';
+                    } elseif (is_string($manualCrmId) && in_array($manualCrmId, array_column($candidates, 'crm_record_id'), true)) {
                         $matched = collect($candidates)->firstWhere('crm_record_id', $manualCrmId);
                         $matchState = GiftReconciliation::MATCH_MANUAL;
                     } elseif ($candidates !== []) {

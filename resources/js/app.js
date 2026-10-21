@@ -8,5 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
     initUpload(document, { onUploaded: openImport });
 
     initScenarios(document);
+    document.querySelectorAll('[data-match-review]').forEach((form) => {
+        form.addEventListener('change', () => {
+            const choice = form.querySelector('input[name="crm_record_id"]:checked');
+            const rejecting = choice && choice.value === '';
+            form.querySelector('button[type="submit"]').textContent = rejecting ? 'Reject CRM candidates' : 'Confirm CRM match';
+            form.dataset.busyForm = rejecting ? 'Rejecting CRM candidates…' : 'Confirming match…';
+        });
+    });
     initFeedback(document);
 });

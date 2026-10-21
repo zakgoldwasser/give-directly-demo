@@ -20,8 +20,19 @@ class ApprovalController extends Controller
         $workspace = $request->attributes->get('guest_workspace');
         $validated = $request->validate([
             'run_id' => ['required', 'uuid'],
+            'decision' => ['sometimes', 'required', 'in:approve,exclude,restore'],
+            'transaction_id' => ['required_if:decision,exclude,restore', 'nullable', 'string', 'max:255'],
+            'reason' => ['nullable', 'string', 'max:500'],
         ]);
-        $count = $this->approvals->approveEligible($workspace, $validated['run_id']);
+        if (in_array($validated['decision'] ?? 'approve', ['exclude', 'restore'], true)) {
+            $restore = $validated['decision'] === 'restore';
+            $this->approvals->exclude($workspace, $validated['run_id'], $validated['transaction_id'], $validated['reason'] ?? '', $restore);
+
+            return redirect()->route('try.show')->with('approval_saved', $restore
+                ? 'Change restored to this export review.'
+                : 'Change excluded from this export. Other changes can still be approved.');
+        }
+        $count = $this->approvals->approveEligible($workspace, $validated['run_id'], $validated['transaction_id'] ?? null);
 
         return redirect()->route('try.show')->with(
             'approval_saved',

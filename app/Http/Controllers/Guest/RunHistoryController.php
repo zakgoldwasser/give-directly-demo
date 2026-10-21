@@ -85,10 +85,18 @@ class RunHistoryController extends Controller
     {
         $snapshot = $run->decisions;
 
+        $revisionSequence = $workspace->reviewDecisions()->whereKey($run->input_snapshot['review_revision'] ?? '')->value('sequence');
+
         return $workspace->reviewDecisions()
             ->orderBy('sequence')
             ->get()
-            ->filter(function (ReviewDecision $decision) use ($snapshot): bool {
+            ->filter(function (ReviewDecision $decision) use ($snapshot, $run, $revisionSequence): bool {
+                if ($decision->decision_type === ReviewDecision::TYPE_EXPORT_EXCLUSION) {
+                    return ($decision->evidence['based_on_reconciliation_run_id'] ?? null) === $run->id;
+                }
+                if ($revisionSequence !== null) {
+                    return $decision->sequence <= $revisionSequence;
+                }
                 $group = $decision->decision_type === ReviewDecision::TYPE_CAMPAIGN_MAPPING
                     ? 'campaign_mappings'
                     : 'manual_matches';

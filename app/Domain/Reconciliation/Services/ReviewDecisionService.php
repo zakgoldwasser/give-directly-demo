@@ -76,11 +76,14 @@ class ReviewDecisionService
         });
     }
 
-    public function confirmCrmMatch(GuestWorkspace $workspace, string $transactionId, string $crmRecordId): ReconciliationRun
+    public function confirmCrmMatch(GuestWorkspace $workspace, string $transactionId, string $crmRecordId, string $action = 'confirm', ?string $runId = null): ReconciliationRun
     {
-        return DB::transaction(function () use ($workspace, $transactionId, $crmRecordId): ReconciliationRun {
+        return DB::transaction(function () use ($workspace, $transactionId, $crmRecordId, $action, $runId): ReconciliationRun {
             GuestWorkspace::query()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
             $run = $this->latestRun($workspace);
+            if ($runId !== null && $run->id !== $runId) {
+                throw ValidationException::withMessages(['run_id' => 'The reconciliation changed. Review the current candidates.']);
+            }
             $result = $run->gifts()
                 ->where('transaction_id', $transactionId)
                 ->first();
@@ -92,12 +95,27 @@ class ReviewDecisionService
 
             if (
                 $result === null
-                || $result->candidate_crm_record_ids === []
+                || ($action !== 'undo' && $result->candidate_crm_record_ids === [])
                 || ($result->crm_match_state !== GiftReconciliation::MATCH_AMBIGUOUS && $current === null)
             ) {
                 throw ValidationException::withMessages([
                     'transaction_id' => 'Choose an ambiguous gift from the current review queue.',
                 ]);
+            }
+
+            if (in_array($action, ['reject', 'undo'], true)) {
+                if ($action === 'undo' && ($current === null || ($current->evidence['action'] ?? 'confirm') === 'undo')) {
+                    throw ValidationException::withMessages(['transaction_id' => 'There is no current match decision to undo.']);
+                }
+                $this->appendLocked($workspace, ReviewDecision::TYPE_CRM_MATCH, $transactionId, '', [
+                    'action' => $action,
+                    'based_on_reconciliation_run_id' => $run->id,
+                    'based_on_reconciliation_run_sequence' => $run->sequence,
+                    'candidate_canonical_record_ids' => $result->candidate_crm_record_ids,
+                ]);
+
+                return $this->reconciliation->run($workspace, $this->currentDecisions($workspace))
+                    ?? throw ValidationException::withMessages(['review' => 'All three validated reports are required.']);
             }
 
             $candidate = CanonicalRecord::query()
@@ -120,6 +138,7 @@ class ReviewDecisionService
                 $transactionId,
                 $crmRecordId,
                 [
+                    'action' => 'confirm',
                     'gift_reconciliation_id' => $result->id,
                     'candidate_canonical_record_id' => $candidate->id,
                     'candidate_active_version_id' => $candidate->active_version_id,
@@ -134,12 +153,12 @@ class ReviewDecisionService
     }
 
     /**
-     * @return array{campaigns: list<array<string, mixed>>, matches: list<array<string, mixed>>}
+     * @return array{campaigns: list<array<string, mixed>>, matches: list<array<string, mixed>>, decided_matches: list<array<string, mixed>>}
      */
     public function options(GuestWorkspace $workspace, ?ReconciliationRun $run): array
     {
         if ($run === null) {
-            return ['campaigns' => [], 'matches' => []];
+            return ['campaigns' => [], 'matches' => [], 'decided_matches' => []];
         }
 
         $results = $run->gifts()
@@ -156,6 +175,9 @@ class ReviewDecisionService
             ->get()
             ->keyBy('id');
         $matches = [];
+        $decidedMatches = [];
+        $matchDecisions = $workspace->reviewDecisions()->where('decision_type', ReviewDecision::TYPE_CRM_MATCH)
+            ->orderBy('sequence')->get()->keyBy('subject_key');
 
         foreach ($results as $result) {
             $giftData = $result->gift?->activeVersion?->normalized_data;
@@ -171,6 +193,14 @@ class ReviewDecisionService
                 $campaigns[$code]['transaction_ids'][] = $result->transaction_id;
             }
 
+            $decision = $matchDecisions->get($result->transaction_id);
+            if ($decision !== null && ($decision->evidence['action'] ?? 'confirm') !== 'undo') {
+                $decidedMatches[] = [
+                    'transaction_id' => $result->transaction_id,
+                    'selected_value' => $decision->selected_value,
+                    'rejected' => ($decision->evidence['action'] ?? 'confirm') === 'reject',
+                ];
+            }
             if ($result->crm_match_state !== GiftReconciliation::MATCH_AMBIGUOUS) {
                 continue;
             }
@@ -211,25 +241,39 @@ class ReviewDecisionService
         return [
             'campaigns' => array_values($campaigns),
             'matches' => $matches,
+            'decided_matches' => $decidedMatches,
         ];
     }
 
     /**
-     * @return array{campaign_mappings: array<string, string>, manual_matches: array<string, string>}
+     * @return array{campaign_mappings: array<string, string>, manual_matches: array<string, string>, rejected_matches: array<string, string>, review_revision?: string}
      */
     public function currentDecisions(GuestWorkspace $workspace): array
     {
-        $decisions = ['campaign_mappings' => [], 'manual_matches' => []];
+        $decisions = ['campaign_mappings' => [], 'manual_matches' => [], 'rejected_matches' => []];
 
         foreach ($workspace->reviewDecisions()->orderBy('sequence')->get() as $decision) {
-            $key = $decision->decision_type === ReviewDecision::TYPE_CAMPAIGN_MAPPING
-                ? 'campaign_mappings'
-                : 'manual_matches';
-            $decisions[$key][$decision->subject_key] = $decision->selected_value;
+            if ($decision->decision_type === ReviewDecision::TYPE_EXPORT_EXCLUSION) {
+                continue;
+            }
+            $decisions['review_revision'] = $decision->id;
+            if ($decision->decision_type === ReviewDecision::TYPE_CAMPAIGN_MAPPING) {
+                $decisions['campaign_mappings'][$decision->subject_key] = $decision->selected_value;
+
+                continue;
+            }
+            unset($decisions['manual_matches'][$decision->subject_key], $decisions['rejected_matches'][$decision->subject_key]);
+            $action = $decision->evidence['action'] ?? 'confirm';
+            if ($action === 'confirm') {
+                $decisions['manual_matches'][$decision->subject_key] = $decision->selected_value;
+            } elseif ($action === 'reject') {
+                $decisions['rejected_matches'][$decision->subject_key] = $decision->id;
+            }
         }
 
-        ksort($decisions['campaign_mappings'], SORT_STRING);
-        ksort($decisions['manual_matches'], SORT_STRING);
+        foreach (['campaign_mappings', 'manual_matches', 'rejected_matches'] as $key) {
+            ksort($decisions[$key], SORT_STRING);
+        }
 
         return $decisions;
     }
@@ -256,7 +300,7 @@ class ReviewDecisionService
             ->orderByDesc('sequence')
             ->first();
 
-        if ($current?->selected_value === $selectedValue) {
+        if ($current?->selected_value === $selectedValue && ($current->evidence['action'] ?? 'confirm') === ($evidence['action'] ?? 'confirm')) {
             return $current;
         }
 

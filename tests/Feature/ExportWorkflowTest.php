@@ -29,7 +29,7 @@ class ExportWorkflowTest extends TestCase
         $this->get(route('try.show'))
             ->assertOk()
             ->assertSee('Review the proposed destination changes', false)
-            ->assertSee('Approve 6 eligible changes', false);
+            ->assertSee('Approve all remaining (6)', false);
 
         $this->post(route('try.approvals.store'), ['run_id' => $run->id])
             ->assertRedirect(route('try.show'));
@@ -138,6 +138,79 @@ class ExportWorkflowTest extends TestCase
         $this->post(route('try.start'), ['intent' => 'scenarios']);
 
         $this->get(route('try.exports.download', $batch))->assertNotFound();
+    }
+
+    public function test_one_change_can_be_excluded_while_other_approved_changes_are_exported_and_confirmed(): void
+    {
+        $run = $this->completeGuidedReview();
+        $this->post(route('try.approvals.store'), ['run_id' => $run->id, 'transaction_id' => 'D003'])->assertSessionHasNoErrors();
+        $this->assertDatabaseCount('reconciliation_approvals', 1);
+        $this->post(route('try.approvals.store'), [
+            'run_id' => $run->id, 'transaction_id' => 'D003', 'decision' => 'exclude', 'reason' => 'Needs donor verification',
+        ])->assertSessionHasNoErrors();
+        $this->post(route('try.exports.store'), ['run_id' => $run->id])->assertSessionHasErrors('export');
+        $this->post(route('try.approvals.store'), ['run_id' => $run->id])->assertSessionHasNoErrors();
+        $this->get(route('try.show'))->assertSee('5 approved')->assertSee('1 excluded')->assertSee('Needs donor verification');
+        $this->post(route('try.exports.store'), ['run_id' => $run->id])->assertSessionHasNoErrors();
+        $batch = ExportBatch::query()->sole();
+        $files = $this->readZip($batch);
+        $this->assertStringNotContainsString('D003', $files['updates.csv']);
+        $this->assertStringContainsString('D007', $files['updates.csv']);
+        $this->assertStringContainsString('D003', $files['held.csv']);
+        $this->assertStringContainsString('Needs donor verification', $files['held.csv']);
+        $this->assertStringContainsString('Needs donor verification', $files['audit.csv']);
+        $this->assertSame(3, $batch->counts['updates']);
+        $this->assertSame(5, $batch->counts['approved_actions']);
+        $this->assertSame(5, $batch->counts['held']);
+        $this->post(route('try.exports.confirm', $batch))->assertSessionHasNoErrors();
+        $confirmation = $batch->confirmations()->sole();
+        $this->assertSame(5, $confirmation->results()->count());
+        $this->assertFalse($confirmation->results()->where('transaction_id', 'D003')->exists());
+        $this->post(route('try.approvals.store'), [
+            'run_id' => $run->id, 'transaction_id' => 'D003', 'decision' => 'restore',
+        ])->assertSessionHasErrors('approval');
+        $this->post(route('try.exports.store'), ['run_id' => $run->id])->assertSessionHasNoErrors();
+        $this->assertDatabaseCount('export_batches', 1);
+    }
+
+    public function test_exclusion_needs_no_reason_requires_a_current_eligible_row_and_can_be_undone_before_export(): void
+    {
+        $run = $this->completeGuidedReview();
+        $this->post(route('try.approvals.store'), [
+            'run_id' => $run->id, 'transaction_id' => 'D003', 'decision' => 'exclude',
+        ])->assertSessionHasNoErrors();
+        $this->post(route('try.approvals.store'), [
+            'run_id' => $run->id, 'transaction_id' => 'D004', 'decision' => 'exclude', 'reason' => 'Hold',
+        ])->assertSessionHasErrors('transaction_id');
+        $this->post(route('try.approvals.store'), [
+            'run_id' => $run->id, 'transaction_id' => 'D003', 'decision' => 'exclude', 'reason' => 'Check details',
+        ])->assertSessionHasNoErrors();
+        $this->post(route('try.approvals.store'), [
+            'run_id' => $run->id, 'transaction_id' => 'D003', 'decision' => 'restore',
+        ])->assertSessionHasNoErrors();
+        $this->get(route('try.show'))->assertSee('0 excluded')->assertSee('6 open');
+        $this->post(route('try.approvals.store'), ['run_id' => $run->id])->assertSessionHasNoErrors();
+        $this->post(route('try.exports.store'), ['run_id' => $run->id])->assertSessionHasNoErrors();
+        $files = $this->readZip(ExportBatch::query()->sole());
+        $this->assertStringContainsString('D003', $files['updates.csv']);
+    }
+
+    public function test_excluding_every_change_produces_only_audited_exclusions(): void
+    {
+        $run = $this->completeGuidedReview();
+        foreach (['D002', 'D003', 'D006', 'D007', 'D008', 'D010'] as $transactionId) {
+            $this->post(route('try.approvals.store'), [
+                'run_id' => $run->id, 'transaction_id' => $transactionId, 'decision' => 'exclude', 'reason' => 'Defer this export',
+            ])->assertSessionHasNoErrors();
+        }
+        $this->get(route('try.show'))->assertSee('0 approved')->assertSee('6 excluded')->assertSee('Create reviewed export package');
+        $this->post(route('try.exports.store'), ['run_id' => $run->id])->assertSessionHasNoErrors();
+        $batch = ExportBatch::query()->sole();
+        $files = $this->readZip($batch);
+        $this->assertSame(0, $batch->counts['approved_actions']);
+        $this->assertSame(1, substr_count($files['creates.csv'], "\n"));
+        $this->assertSame(1, substr_count($files['updates.csv'], "\n"));
+        $this->assertSame(10, $batch->counts['held']);
     }
 
     private function completeGuidedReview(): ReconciliationRun

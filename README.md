@@ -60,9 +60,15 @@ docker compose exec laravel.test node --test tests/JavaScript/feedback.test.js
 
 Below the sample datasets, choose a donation, payout, or CRM CSV to upload. The first upload starts a temporary workspace separate from any sample; subsequent uploads use the same upload workspace. Uploads open a report modal with separate Mapping and Preview tabs. Save and validate inside the modal, then continue to the next report. Closing preserves the file and the report card’s Review mapping link reopens it. The standalone import page remains available as a fallback. File-size, row-count, validation, rate, and processing limits apply to all uploads. Refunded amount is optional in donation and CRM reports: an absent or unmapped column, or an empty cell, normalizes to 0.00. Non-empty values retain the usual amount and refund-consistency checks; original source values remain unchanged.
 
+## CRM match review
+
+Select a supported CRM candidate to confirm a match, or select **None of these** to reject all candidates and keep the donation held. Saved confirmations and rejections appear in **CRM match decisions** with **Undo match decision**. Undo reopens review in a fresh reconciliation run, preserving the earlier decision and invalidating earlier run approvals for the new run.
+
 ## Reviewed export package
 
-An approved current run produces a private ZIP containing `creates.csv`, `updates.csv`, `held.csv`, `audit.csv`, and `manifest.json`. Creating or downloading this package does not write to a CRM. The generic destination profile exports only gift fields; donor names, email addresses, and contact consent are excluded.
+Review each proposed create or update with **Approve** or **Exclude**, or use **Approve all remaining**. Exclusions need no reason, stay visible, and can be undone before the package is created. They apply only to that run. Every eligible change must be approved or excluded before export; a package with all changes excluded contains no create or update actions. The package records exclusions in `held.csv`, `audit.csv`, and its manifest. Review decisions are locked after package creation so downloads and subsequent CRM confirmation refer to the same approved actions.
+
+A fully reviewed current run produces a private ZIP containing `creates.csv`, `updates.csv`, `held.csv`, `audit.csv`, and `manifest.json`. Creating or downloading this package does not write to a CRM. The generic destination profile exports only gift fields; donor names, email addresses, and contact consent are excluded.
 
 Configure `external_gift_key`, `source_transaction_id`, `crm_record_id`, and `campaign_id` as text columns in the destination importer so leading-zero identifiers remain unchanged. Configure `gross_amount` and `refunded_amount` as fixed two-decimal values, and validate the manifest checksums before import.
 

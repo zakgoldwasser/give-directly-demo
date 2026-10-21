@@ -197,10 +197,11 @@
                 <div class="mt-6 space-y-4">
                     <h3 class="text-sm font-semibold text-stone-900">Confirm CRM candidates</h3>
                     @foreach ($reviewOptions['matches'] as $matchIndex => $match)
-                        <form class="rounded-lg border border-amber-200 bg-white p-4" method="POST" action="{{ route('try.review.matches.store') }}" data-busy-form="Confirming match…">
+                        <form class="rounded-lg border border-amber-200 bg-white p-4" method="POST" action="{{ route('try.review.matches.store') }}" data-busy-form="Confirming match…" data-match-review>
                             @csrf
                             <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                             <input type="hidden" name="transaction_id" value="{{ $match['transaction_id'] }}">
+                            <input type="hidden" name="run_id" value="{{ $reconciliationRun->id }}">
                             <fieldset>
                                 <legend class="font-medium text-stone-900">Gift {{ $match['transaction_id'] }}</legend>
                                 <p class="mt-1 text-xs text-stone-500">
@@ -217,13 +218,38 @@
                                             </span>
                                         </label>
                                     @endforeach
+                                    <label class="flex cursor-pointer gap-3 rounded-lg border border-stone-200 p-3">
+                                        <input name="crm_record_id" type="radio" required value="">
+                                        <span class="text-sm"><span class="block font-medium text-stone-900">None of these</span><span class="mt-1 block text-xs text-stone-500">Reject these candidates and keep this donation held for review.</span></span>
+                                    </label>
                                 </div>
                             </fieldset>
                             <button class="mt-4 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800" type="submit">Confirm CRM match</button>
+                            <p class="mt-2 text-xs text-stone-500">Selecting &ldquo;None of these&rdquo; records a rejection instead of a match.</p>
                         </form>
                     @endforeach
                 </div>
             @endif
+        </section>
+    @endif
+
+    @if ($reviewOptions['decided_matches'] !== [])
+        <section class="mt-8 rounded-xl border border-stone-200 bg-white p-6" aria-labelledby="match-decisions-heading">
+            <h2 id="match-decisions-heading" class="text-xl font-semibold text-stone-900">CRM match decisions</h2>
+            <p class="mt-2 text-sm text-stone-600">Undo reopens candidate review and creates a new reconciliation run. Earlier decisions and exports remain in history.</p>
+            <div class="mt-4 space-y-3">
+                @foreach ($reviewOptions['decided_matches'] as $decision)
+                    <form method="POST" action="{{ route('try.review.matches.store') }}" data-busy-form="Undoing match decision…" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-200 p-4">
+                        @csrf
+                        <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
+                        <input type="hidden" name="run_id" value="{{ $reconciliationRun->id }}">
+                        <input type="hidden" name="transaction_id" value="{{ $decision['transaction_id'] }}">
+                        <input type="hidden" name="action" value="undo">
+                        <p class="text-sm"><strong>Gift {{ $decision['transaction_id'] }}</strong> · {{ $decision['rejected'] ? 'All candidates rejected; held for review' : 'Confirmed: '.$decision['selected_value'] }}</p>
+                        <button type="submit" class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium hover:bg-stone-50">Undo match decision</button>
+                    </form>
+                @endforeach
+            </div>
         </section>
     @endif
 
@@ -236,7 +262,7 @@
                     <p class="mt-2 text-sm text-stone-600">Approvals apply only to run {{ $reconciliationRun->sequence }}. Any changed evidence or review decision requires a new approval.</p>
                     <p class="mt-1 text-xs text-stone-500">Destination profile {{ $exportProfileVersion }}@if ($crmSnapshotGeneratedAt) · CRM snapshot {{ $crmSnapshotGeneratedAt }}@endif</p>
                 </div>
-                <p class="text-sm font-medium text-stone-700">{{ $approvalPreview['approved_count'] }} of {{ $approvalPreview['eligible_count'] }} approved</p>
+                <p class="text-sm font-medium text-stone-700">{{ $approvalPreview['approved_count'] }} approved &middot; {{ $approvalPreview['excluded_count'] }} excluded &middot; {{ $approvalPreview['open_count'] }} open</p>
             </div>
 
             <div class="mt-5 overflow-x-auto rounded-lg border border-stone-200">
@@ -275,13 +301,41 @@
                                         @endforeach
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-stone-700">{{ $action['approved'] ? 'Approved' : 'Open' }}</td>
+                                <td class="min-w-64 px-4 py-3 text-stone-700">
+                                    <p class="font-medium">{{ $action['excluded'] ? 'Excluded from this export' : ($action['approved'] ? 'Approved' : 'Open') }}</p>
+                                    @if ($action['excluded'])
+                                        <p class="mt-1 text-xs text-stone-600">{{ $action['reason'] }}</p>
+                                    @endif
+                                    @if (! $approvalPreview['locked'])
+                                        @if ($action['excluded'] || (! $action['approved'] && $reviewOptions['campaigns'] === [] && $reviewOptions['matches'] === []))
+                                            <form class="mt-2" method="POST" action="{{ route('try.approvals.store') }}" data-busy-form="Saving review…">
+                                                @csrf
+                                                <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
+                                                <input type="hidden" name="run_id" value="{{ $reconciliationRun->id }}">
+                                                <input type="hidden" name="transaction_id" value="{{ $action['transaction_id'] }}">
+                                                <input type="hidden" name="decision" value="{{ $action['excluded'] ? 'restore' : 'approve' }}">
+                                                <button type="submit" class="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-800">{{ $action['excluded'] ? 'Undo exclusion' : 'Approve' }}</button>
+                                            </form>
+                                        @endif
+                                        @if (! $action['excluded'])
+                                            <form class="mt-2" method="POST" action="{{ route('try.approvals.store') }}" data-busy-form="Excluding change&hellip;">
+                                                @csrf
+                                                <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
+                                                <input type="hidden" name="run_id" value="{{ $reconciliationRun->id }}">
+                                                <input type="hidden" name="transaction_id" value="{{ $action['transaction_id'] }}">
+                                                <input type="hidden" name="decision" value="exclude">
+                                                <button type="submit" class="rounded-lg border border-stone-300 px-3 py-2 text-xs hover:bg-stone-50">Exclude</button>
+                                            </form>
+                                        @endif
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
 
+            <p class="mt-3 text-xs text-stone-500">Excluded changes remain visible in the review and the export audit. Review decisions are locked once the export package is created.</p>
             @if (! $approvalPreview['complete'])
                 @if ($reviewOptions['campaigns'] !== [] || $reviewOptions['matches'] !== [])
                     <p class="mt-4 text-sm text-amber-800">Finish the campaign and candidate reviews above before approving this run.</p>
@@ -290,7 +344,7 @@
                         @csrf
                         <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                         <input type="hidden" name="run_id" value="{{ $reconciliationRun->id }}">
-                        <button class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800" type="submit">Approve {{ $approvalPreview['eligible_count'] }} eligible changes</button>
+                        <button class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800" type="submit">Approve all remaining ({{ $approvalPreview['open_count'] }})</button>
                     </form>
                 @endif
             @elseif ($exportBatch === null)

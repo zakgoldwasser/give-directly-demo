@@ -14,6 +14,8 @@ class ReviewDecision extends Model
 
     public const TYPE_CRM_MATCH = 'crm_match_confirmation';
 
+    public const TYPE_EXPORT_EXCLUSION = 'export_exclusion';
+
     /** @var list<string> */
     protected $fillable = [
         'guest_workspace_id',

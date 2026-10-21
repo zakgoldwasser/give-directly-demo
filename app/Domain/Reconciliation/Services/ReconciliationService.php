@@ -23,7 +23,7 @@ class ReconciliationService
     ) {}
 
     /**
-     * @param  array{campaign_mappings?: array<string, string>, manual_matches?: array<string, string>}  $decisions
+     * @param  array{campaign_mappings?: array<string, string>, manual_matches?: array<string, string>, rejected_matches?: array<string, string>, review_revision?: string}  $decisions
      */
     public function run(GuestWorkspace $workspace, array $decisions = []): ?ReconciliationRun
     {
@@ -54,6 +54,8 @@ class ReconciliationService
             ksort($campaignMappings, SORT_STRING);
 
             $inputSnapshot = $this->inputSnapshot($batches, $records, $campaignMappings, $normalizedDecisions['manual_matches']);
+            $inputSnapshot['rejected_matches'] = $normalizedDecisions['rejected_matches'];
+            $inputSnapshot['review_revision'] = $decisions['review_revision'] ?? null;
             $fingerprint = hash('sha256', json_encode($inputSnapshot, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
             $existing = ReconciliationRun::query()
                 ->where('guest_workspace_id', $workspace->id)
@@ -76,6 +78,7 @@ class ReconciliationService
                 $campaignMappings,
                 $normalizedDecisions['manual_matches'],
                 $coverageIssue,
+                $normalizedDecisions['rejected_matches'],
             );
             $this->deadline->checkpoint();
             $now = now();
@@ -182,12 +185,12 @@ class ReconciliationService
     }
 
     /**
-     * @param  array{campaign_mappings?: array<string, string>, manual_matches?: array<string, string>}  $decisions
-     * @return array{campaign_mappings: array<string, string>, manual_matches: array<string, string>}
+     * @param  array{campaign_mappings?: array<string, string>, manual_matches?: array<string, string>, rejected_matches?: array<string, string>, review_revision?: string}  $decisions
+     * @return array{campaign_mappings: array<string, string>, manual_matches: array<string, string>, rejected_matches: array<string, string>}
      */
     private function normalizeDecisions(array $decisions): array
     {
-        $normalized = ['campaign_mappings' => [], 'manual_matches' => []];
+        $normalized = ['campaign_mappings' => [], 'manual_matches' => [], 'rejected_matches' => []];
 
         foreach (array_keys($normalized) as $key) {
             foreach (($decisions[$key] ?? []) as $source => $destination) {

@@ -106,6 +106,6 @@ class ReconciliationEngineTest extends TestCase
             $run->gifts->where('outcome', GiftReconciliation::OUTCOME_HELD)->pluck('transaction_id')->sort()->values()->all(),
         );
         $this->assertSame('CAMPAIGN-NEW-PROGRAM', $gifts['D006']->expected_values['campaign_id']);
-        $this->assertSame($decisions, $run->decisions);
+        $this->assertSame([...$decisions, 'rejected_matches' => []], $run->decisions);
     }
 }
