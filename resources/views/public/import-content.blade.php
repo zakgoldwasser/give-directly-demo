@@ -107,6 +107,9 @@
                 @foreach ($schemaFields as $canonicalField => $definition)
                     <label class="block text-sm">
                         <span class="font-medium text-stone-800">{{ $definition['label'] }}@if ($definition['required']) <span class="text-red-700">required</span>@endif</span>
+                        @if ($canonicalField === 'refunded_amount')
+                            <span class="mt-1 block text-xs text-stone-600">Optional. Missing columns and empty cells are treated as 0.00.</span>
+                        @endif
                         <span class="mt-1 block text-xs text-stone-500">{{ $canonicalField }} · {{ str_replace('_', ' ', $definition['type']) }}</span>
                         <select class="mt-2 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900" name="mapping[{{ $canonicalField }}]">
                             <option value="">Not mapped</option>

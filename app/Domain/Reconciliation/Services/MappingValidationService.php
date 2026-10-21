@@ -300,7 +300,7 @@ class MappingValidationService
             $sourceHeader = $mapping[$canonicalField] ?? null;
 
             if ($sourceHeader === null) {
-                $normalized[$definition['normalized'] ?? $canonicalField] = null;
+                $normalized[$definition['normalized'] ?? $canonicalField] = $definition['default'] ?? null;
 
                 continue;
             }
@@ -317,7 +317,7 @@ class MappingValidationService
     }
 
     /**
-     * @param  array{label: string, type: string, required: bool, normalized?: string, values?: list<string>}  $definition
+     * @param  array{label: string, type: string, required: bool, normalized?: string, default?: int, values?: list<string>}  $definition
      * @return array{0: mixed, 1: list<array{code: string, column: string|null, message: string, severity: string}>}
      */
     private function normalizeValue(string $canonicalField, string $sourceHeader, string $sourceValue, array $definition): array
@@ -329,7 +329,7 @@ class MappingValidationService
                 return [null, [$this->issue('REQUIRED_VALUE', $sourceHeader, "{$definition['label']} is required.")]];
             }
 
-            return [null, []];
+            return [$definition['default'] ?? null, []];
         }
 
         return match ($definition['type']) {

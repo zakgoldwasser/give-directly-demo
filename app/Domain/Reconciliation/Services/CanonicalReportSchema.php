@@ -7,7 +7,7 @@ use InvalidArgumentException;
 class CanonicalReportSchema
 {
     /**
-     * @return array<string, array{label: string, type: string, required: bool, normalized?: string, values?: list<string>}>
+     * @return array<string, array{label: string, type: string, required: bool, normalized?: string, default?: int, values?: list<string>}>
      */
     public function fields(string $reportType): array
     {
@@ -31,7 +31,7 @@ class CanonicalReportSchema
     }
 
     /**
-     * @return array<string, array{label: string, type: string, required: bool, normalized?: string, values?: list<string>}>
+     * @return array<string, array{label: string, type: string, required: bool, normalized?: string, default?: int, values?: list<string>}>
      */
     private function donationFields(): array
     {
@@ -41,7 +41,7 @@ class CanonicalReportSchema
             'gross_amount' => ['label' => 'Gross amount', 'type' => 'positive_money', 'required' => true, 'normalized' => 'gross_amount_minor'],
             'currency' => ['label' => 'Currency', 'type' => 'currency', 'required' => true],
             'status' => ['label' => 'Gift status', 'type' => 'enum', 'required' => true, 'values' => ['pending', 'paid', 'partially_refunded', 'refunded', 'reversed']],
-            'refunded_amount' => ['label' => 'Refunded amount', 'type' => 'non_negative_money', 'required' => true, 'normalized' => 'refunded_amount_minor'],
+            'refunded_amount' => ['label' => 'Refunded amount', 'type' => 'non_negative_money', 'required' => false, 'normalized' => 'refunded_amount_minor', 'default' => 0],
             'campaign_code' => ['label' => 'Campaign code', 'type' => 'text', 'required' => true],
             'donor_ref' => ['label' => 'Donor reference', 'type' => 'text', 'required' => false],
             'donor_email' => ['label' => 'Donor email', 'type' => 'email', 'required' => false],
@@ -50,7 +50,7 @@ class CanonicalReportSchema
     }
 
     /**
-     * @return array<string, array{label: string, type: string, required: bool, normalized?: string, values?: list<string>}>
+     * @return array<string, array{label: string, type: string, required: bool, normalized?: string, default?: int, values?: list<string>}>
      */
     private function payoutFields(): array
     {
@@ -70,7 +70,7 @@ class CanonicalReportSchema
     }
 
     /**
-     * @return array<string, array{label: string, type: string, required: bool, normalized?: string, values?: list<string>}>
+     * @return array<string, array{label: string, type: string, required: bool, normalized?: string, default?: int, values?: list<string>}>
      */
     private function crmFields(): array
     {
@@ -79,7 +79,7 @@ class CanonicalReportSchema
             'external_gift_key' => ['label' => 'External gift key', 'type' => 'text', 'required' => false],
             'provider_transaction_id' => ['label' => 'Provider transaction ID', 'type' => 'text', 'required' => false],
             'gross_amount' => ['label' => 'Gross amount', 'type' => 'positive_money', 'required' => true, 'normalized' => 'gross_amount_minor'],
-            'refunded_amount' => ['label' => 'Refunded amount', 'type' => 'non_negative_money', 'required' => true, 'normalized' => 'refunded_amount_minor'],
+            'refunded_amount' => ['label' => 'Refunded amount', 'type' => 'non_negative_money', 'required' => false, 'normalized' => 'refunded_amount_minor', 'default' => 0],
             'currency' => ['label' => 'Currency', 'type' => 'currency', 'required' => true],
             'gifted_at' => ['label' => 'Gift date', 'type' => 'datetime', 'required' => true],
             'gift_status' => ['label' => 'Gift status', 'type' => 'enum', 'required' => true, 'values' => ['pending', 'paid', 'partially_refunded', 'refunded', 'reversed']],

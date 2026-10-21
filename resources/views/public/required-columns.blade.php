@@ -6,7 +6,6 @@
             'Donation amount before fees',
             'Currency',
             'Donation status',
-            'Amount refunded (0.00 if none)',
             'Campaign code',
         ],
         'payouts' => [
@@ -22,7 +21,6 @@
         'crm' => [
             'CRM record reference',
             'Donation amount before fees',
-            'Amount refunded (0.00 if none)',
             'Currency',
             'Donation date and time',
             'Donation status',
@@ -41,4 +39,7 @@
             <li>Payout date — required when the payout has been sent</li>
         @endif
     </ul>
+    @if (in_array($type, ['donations', 'crm'], true))
+        <p class="mt-3"><strong class="font-semibold text-stone-900">Optional:</strong> Amount refunded. Missing columns and empty cells are treated as 0.00.</p>
+    @endif
 </div>

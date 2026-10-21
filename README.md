@@ -58,7 +58,7 @@ docker compose exec laravel.test node --test tests/JavaScript/feedback.test.js
 
 ## CSV uploads
 
-Below the sample datasets, choose a donation, payout, or CRM CSV to upload. The first upload starts a temporary workspace separate from any sample; subsequent uploads use the same upload workspace. Uploads open a report modal with separate Mapping and Preview tabs. Save and validate inside the modal, then continue to the next report. Closing preserves the file and the report card’s Review mapping link reopens it. The standalone import page remains available as a fallback. File-size, row-count, validation, rate, and processing limits apply to all uploads.
+Below the sample datasets, choose a donation, payout, or CRM CSV to upload. The first upload starts a temporary workspace separate from any sample; subsequent uploads use the same upload workspace. Uploads open a report modal with separate Mapping and Preview tabs. Save and validate inside the modal, then continue to the next report. Closing preserves the file and the report card’s Review mapping link reopens it. The standalone import page remains available as a fallback. File-size, row-count, validation, rate, and processing limits apply to all uploads. Refunded amount is optional in donation and CRM reports: an absent or unmapped column, or an empty cell, normalizes to 0.00. Non-empty values retain the usual amount and refund-consistency checks; original source values remain unchanged.
 
 ## Reviewed export package
 

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Reconciliation\Services\MappingValidationService;
+use App\Models\CanonicalRecordVersion;
 use App\Models\ImportBatch;
 use App\Models\ImportRow;
 use App\Models\MappingProfile;
@@ -10,6 +11,7 @@ use App\Models\SourceOccurrence;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class MappingValidationTest extends TestCase
@@ -263,6 +265,51 @@ class MappingValidationTest extends TestCase
         $this->assertStringContainsString('Validation passed for all 1 rows', $response->json('data.html'));
         $this->assertStringContainsString('data-report-status="validated"', $response->json('data.card_html'));
         $this->assertStringContainsString('1 valid', $response->json('data.card_html'));
+    }
+
+    #[DataProvider('optionalRefundCases')]
+    public function test_refund_defaults_reach_canonical_records_without_hiding_invalid_values(string $reportType, ?string $refund, ?int $expectedMinor, ?string $error): void
+    {
+        $raw = $reportType === 'donations'
+            ? ['transaction_id' => 'OPTIONAL01', 'gifted_at' => '2026-09-02T10:15:00+00:00', 'gross_amount' => '25.00', 'currency' => 'GBP', 'status' => 'paid', 'campaign_code' => 'GENERAL']
+            : ['crm_record_id' => 'CRM-OPTIONAL01', 'gifted_at' => '2026-09-02T10:15:00+00:00', 'gross_amount' => '25.00', 'currency' => 'GBP', 'gift_status' => 'paid', 'campaign_id' => 'CAMPAIGN-GENERAL'];
+        if ($refund !== null) {
+            $raw['refunded_amount'] = $refund;
+        }
+        $this->upload($reportType, implode(',', array_keys($raw))."\n".implode(',', $raw)."\n");
+        $batch = ImportBatch::query()->firstOrFail();
+        $row = ImportRow::query()->firstOrFail();
+        $storedRaw = $row->raw_data;
+        ksort($raw);
+        ksort($storedRaw);
+        $this->assertSame($raw, $storedRaw);
+        $this->assertSame($expectedMinor, $row->normalized_data['refunded_amount_minor']);
+        if ($error === null) {
+            $this->assertSame(ImportBatch::STATUS_VALIDATED, $batch->status);
+            $this->assertSame($expectedMinor, CanonicalRecordVersion::query()->firstOrFail()->normalized_data['refunded_amount_minor']);
+        } else {
+            $this->assertSame(ImportBatch::STATUS_VALIDATION_FAILED, $batch->status);
+            $this->assertContains($error, array_column($row->validation_issues, 'code'));
+            $this->assertDatabaseCount('canonical_record_versions', 0);
+        }
+    }
+
+    public static function optionalRefundCases(): iterable
+    {
+        foreach (['donations', 'crm'] as $type) {
+            foreach ([
+                'missing column' => [null, 0, null],
+                'empty cell' => ['', 0, null],
+                'whitespace cell' => ['   ', 0, null],
+                'explicit zero' => ['0.00', 0, null],
+                'nonzero refund' => ['5.25', 525, null],
+                'invalid text' => ['unknown', null, 'INVALID_MONEY'],
+                'negative refund' => ['-1.00', -100, 'AMOUNT_NEGATIVE'],
+                'excessive refund' => ['30.00', 3000, 'REFUND_EXCEEDS_GROSS'],
+            ] as $case => $arguments) {
+                yield $type.' '.$case => [$type, ...$arguments];
+            }
+        }
     }
 
     private function upload(string $reportType, string $contents): void
