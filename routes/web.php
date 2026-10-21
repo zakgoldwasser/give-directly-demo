@@ -15,6 +15,7 @@ use App\Http\Controllers\Guest\PostImportVerificationController;
 use App\Http\Controllers\Guest\RunHistoryController;
 use App\Http\Controllers\Guest\WorkspaceController;
 use App\Http\Middleware\EnsureGuestWorkspace;
+use App\Http\Middleware\EnsureUploadWorkspace;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', LandingController::class)->name('landing');
@@ -26,6 +27,11 @@ Route::post('/try/start', [WorkspaceController::class, 'start'])
     ->middleware(['new.workspaces', 'throttle:workspace-starts'])
     ->name('try.start');
 Route::get('/fixtures/reference/{reportType}', FixtureController::class)->name('reference-fixtures.download');
+
+Route::post('/try/upload', [ImportController::class, 'store'])
+    ->middleware(['new.workspaces', 'throttle:workspace-starts', EnsureUploadWorkspace::class, 'throttle:workspace-work', 'bounded.operation:import'])
+    ->block()
+    ->name('try.upload');
 
 Route::middleware(EnsureGuestWorkspace::class)->group(function () {
     Route::get('/try', [WorkspaceController::class, 'show'])->name('try.show');

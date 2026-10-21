@@ -5,7 +5,7 @@
 @section('content')
 <section class="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
     <div class="max-w-3xl">
-        <p class="text-sm font-medium uppercase tracking-wide text-emerald-700">Independent demo · Synthetic data</p>
+        <p class="text-sm font-medium uppercase tracking-wide text-emerald-700">Independent demo · Synthetic samples</p>
         <h1 class="mt-3 text-4xl font-semibold tracking-tight text-stone-900 sm:text-5xl">
             Reconcile partner donations, payouts, and CRM records with inspectable evidence.
         </h1>
@@ -30,9 +30,28 @@
         @include('public.scenario-cards', ['sampleScenarios' => $sampleScenarios, 'selectedScenarioId' => null])
     </section>
 
+    <section id="upload-reports" class="mt-12 scroll-mt-6" aria-labelledby="upload-reports-heading">
+        <h2 id="upload-reports-heading" class="text-2xl font-semibold text-stone-900">Upload your CSVs</h2>
+        <p class="mt-2 text-stone-600">Upload one report at a time, then review and map its columns. Add the remaining reports in your workspace. Your uploads are kept separate from the sample datasets.</p>
+        <p class="mt-2 text-sm text-stone-500">Up to {{ number_format(config('reconciliation.max_csv_size_bytes') / 1024 / 1024, 0) }} MiB and {{ number_format(config('reconciliation.max_data_rows')) }} rows per CSV.</p>
+        <div class="mt-6 grid gap-5 md:grid-cols-3">
+            @foreach ([
+                'donations' => ['Donation report', 'Individual gifts, transaction identifiers, amounts, and campaign details.'],
+                'payouts' => ['Payout report', 'Payout totals and their donation, fee, refund, and reversal components.'],
+                'crm' => ['CRM snapshot', 'Existing donation records and identifiers used to find matches.'],
+            ] as $type => [$title, $description])
+                <article class="rounded-xl border border-stone-200 bg-white p-5">
+                    <h3 class="font-semibold text-stone-900">{{ $title }}</h3>
+                    <p class="mt-2 text-sm text-stone-600">{{ $description }}</p>
+                    @include('public.upload-form', ['uploadUrl' => route('try.upload')])
+                </article>
+            @endforeach
+        </div>
+    </section>
+
     <div class="mt-12 rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-950">
         <h2 class="font-semibold">Demonstration boundary</h2>
-        <p class="mt-2">This independent demo uses synthetic data. It does not write to Salesforce, confirm bank receipt, or represent an actual CAF export contract.</p>
+        <p class="mt-2">The sample datasets use synthetic data. You can also upload your own CSVs. This independent demo does not write to Salesforce, confirm bank receipt, or represent an actual CAF export contract.</p>
     </div>
 </section>
 @endsection

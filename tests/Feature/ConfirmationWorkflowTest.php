@@ -22,7 +22,6 @@ class ConfirmationWorkflowTest extends TestCase
 
         Storage::fake('imports');
         Storage::fake('exports');
-        config(['reconciliation.allow_arbitrary_uploads' => false]);
     }
 
     public function test_the_reviewed_export_is_confirmed_against_the_fixed_later_snapshot(): void

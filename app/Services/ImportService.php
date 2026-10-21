@@ -51,7 +51,7 @@ class ImportService
             ? $file->getClientOriginalName()
             : $reportType.'.csv';
 
-        return $this->createFromPath($workspace, $realPath, $reportType, $originalName, true);
+        return $this->createFromPath($workspace, $realPath, $reportType, $originalName);
     }
 
     /**
@@ -70,7 +70,6 @@ class ImportService
             $fixtures->path($reportType),
             $reportType,
             (string) $report['filename'],
-            false,
             $fixtures->contextFor($reportType, $report['sha256']),
         );
     }
@@ -100,7 +99,6 @@ class ImportService
             sourcePath: $fixtures->confirmationSnapshotPath(),
             reportType: 'crm',
             originalName: (string) $snapshot['filename'],
-            enforceUploadPolicy: false,
             context: $context,
             runReconciliation: false,
         );
@@ -214,25 +212,6 @@ class ImportService
         }
     }
 
-    /**
-     * @throws ImportLimitException
-     */
-    private function assertUploadIsAllowed(string $checksum, string $reportType): void
-    {
-        if ((bool) config('reconciliation.allow_arbitrary_uploads')) {
-            return;
-        }
-
-        if ($this->fixtures->contextForUpload($reportType, $checksum) !== null) {
-            return;
-        }
-
-        throw new ImportLimitException(
-            'PUBLIC_FIXTURE_REQUIRED',
-            'Use one of the supplied synthetic sample files. Arbitrary CSV uploads are available only in local evaluation mode.'
-        );
-    }
-
     private function findByChecksumAndType(
         GuestWorkspace $workspace,
         string $checksum,
@@ -256,7 +235,6 @@ class ImportService
         string $sourcePath,
         string $reportType,
         string $originalName,
-        bool $enforceUploadPolicy,
         ?array $context = null,
         bool $runReconciliation = true,
     ): ImportBatch {
@@ -279,10 +257,6 @@ class ImportService
         }
 
         $this->deadline->checkpoint();
-
-        if ($enforceUploadPolicy) {
-            $this->assertUploadIsAllowed($checksum, $reportType);
-        }
 
         $existing = $this->findByChecksumAndType($workspace, $checksum, $reportType);
 

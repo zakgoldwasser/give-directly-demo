@@ -44,10 +44,8 @@ class BenchmarkReconciliation extends Command
 
         $directory = sys_get_temp_dir().DIRECTORY_SEPARATOR.'reconciliation-benchmark-'.Str::uuid();
         $workspace = null;
-        $previousUploadPolicy = config('reconciliation.allow_arbitrary_uploads');
 
         try {
-            config(['reconciliation.allow_arbitrary_uploads' => true]);
             $paths = $dataset->write($directory);
             $workspace = GuestWorkspace::query()->create([
                 'session_binding_hash' => hash('sha256', Str::random(64)),
@@ -121,7 +119,6 @@ class BenchmarkReconciliation extends Command
 
             return self::FAILURE;
         } finally {
-            config(['reconciliation.allow_arbitrary_uploads' => $previousUploadPolicy]);
             File::deleteDirectory($directory);
 
             if ($workspace !== null && ! (bool) $this->option('keep-workspace')) {

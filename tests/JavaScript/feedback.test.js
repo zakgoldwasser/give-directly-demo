@@ -26,7 +26,7 @@ beforeEach(() => {
     timers = new Map();
     window.setTimeout = (callback) => { timers.set(callback, callback); return callback; };
     window.clearTimeout = (timer) => timers.delete(timer);
-    globalThis.document = { createElement: () => new Element(), querySelector: () => null };
+    globalThis.document = { createElement: () => new Element(), querySelector: () => null, querySelectorAll: () => [] };
 });
 
 function setup({ links = [], forms = [], controls = [] } = {}) {
@@ -193,14 +193,23 @@ for (const status of [200, 409]) {
 
 test('upload failure restores the button and permits a retry', async () => {
     const { form, button, error } = uploadFixture();
+    const sampleButton = new Element();
+    sampleButton.disabled = false;
+    const otherUploadButton = new Element();
+    otherUploadButton.disabled = false;
+    document.querySelectorAll = () => [button, sampleButton, otherUploadButton];
     let requests = 0;
     globalThis.fetch = async () => {
         requests++;
         return { status: 422, ok: false, json: async () => ({ error: { message: 'Invalid CSV' } }) };
     };
     form.dispatchEvent(new Event('submit', { cancelable: true }));
+    assert.equal(sampleButton.disabled, true);
+    assert.equal(otherUploadButton.disabled, true);
     await new Promise(setImmediate);
     assert.equal(button.disabled, false);
+    assert.equal(sampleButton.disabled, false);
+    assert.equal(otherUploadButton.disabled, false);
     assert.equal(error.textContent, 'Invalid CSV');
     form.dispatchEvent(new Event('submit', { cancelable: true }));
     await new Promise(setImmediate);

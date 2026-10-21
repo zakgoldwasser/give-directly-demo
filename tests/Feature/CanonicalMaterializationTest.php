@@ -21,7 +21,6 @@ class CanonicalMaterializationTest extends TestCase
         parent::setUp();
 
         Storage::fake('imports');
-        config(['reconciliation.allow_arbitrary_uploads' => true]);
     }
 
     public function test_reference_reports_materialize_expected_records_versions_and_source_occurrences(): void

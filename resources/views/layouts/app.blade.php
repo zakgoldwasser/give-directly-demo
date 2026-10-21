@@ -36,7 +36,7 @@
 
     <footer class="mt-16 border-t border-stone-200 bg-white">
         <div class="mx-auto max-w-5xl px-4 py-8 text-sm text-stone-500 sm:px-6">
-            <p>{{ config('app.name') }} is an independent reconciliation demo using synthetic data.</p>
+            <p>{{ config('app.name') }} is an independent reconciliation demo with synthetic samples and CSV uploads.</p>
             <p class="mt-2">Temporary guest workspaces expire automatically. No account is required.</p>
         </div>
     </footer>

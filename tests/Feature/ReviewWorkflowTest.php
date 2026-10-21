@@ -18,7 +18,6 @@ class ReviewWorkflowTest extends TestCase
         parent::setUp();
 
         Storage::fake('imports');
-        config(['reconciliation.allow_arbitrary_uploads' => false]);
     }
 
     public function test_reviewer_decisions_are_recorded_and_generate_new_immutable_runs(): void

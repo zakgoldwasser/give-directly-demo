@@ -455,22 +455,7 @@
                         <a class="mt-3 inline-flex text-sm font-medium underline" href="{{ route('try.imports.show', $batch) }}">Review loaded rows</a>
                     </div>
                 @else
-                    <form class="mt-5" method="POST" enctype="multipart/form-data" action="{{ route('try.imports.store') }}" data-upload-form data-upload-url="{{ route('try.imports.store') }}" data-max-bytes="{{ (int) config('reconciliation.max_csv_size_bytes') }}">
-                        @csrf
-                        <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
-                        <input type="hidden" name="report_type" value="{{ $type }}">
-                        <label class="block rounded-lg border border-dashed border-stone-300 p-4 text-center" data-drop-zone>
-                            <span class="block text-sm font-medium text-stone-800">Choose CSV</span>
-                            <span class="mt-1 block text-xs text-stone-500" data-file-label>No file selected</span>
-                            <input class="sr-only" type="file" name="file" accept=".csv,text/csv" data-file-input>
-                        </label>
-                        <p class="mt-3 hidden text-sm text-red-700" data-upload-error role="alert"></p>
-                        <p class="mt-3 hidden text-sm text-stone-600" role="status" data-upload-progress></p>
-                        <button class="mt-4 w-full rounded-lg bg-emerald-700 px-4 py-2 font-medium text-white hover:bg-emerald-800" type="submit" data-upload-submit>Load report</button>
-                    </form>
-                    @unless ($arbitraryUploadsAllowed)
-                        <p class="mt-3 text-xs text-stone-500">Public demo uploads must match this report's supplied sample.</p>
-                    @endunless
+                    @include('public.upload-form', ['uploadUrl' => route('try.imports.store')])
                 @endif
             </article>
         @endforeach

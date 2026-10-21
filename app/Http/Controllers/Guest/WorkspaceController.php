@@ -123,7 +123,6 @@ class WorkspaceController extends Controller
             'maxFieldLength' => (int) config('reconciliation.max_field_length'),
             'maxActiveImports' => (int) config('reconciliation.max_active_imports_per_session'),
             'workspaceLifetimeMinutes' => (int) config('reconciliation.workspace_lifetime_minutes'),
-            'arbitraryUploadsAllowed' => (bool) config('reconciliation.allow_arbitrary_uploads'),
             'minutesRemaining' => $workspace->minutesRemaining(),
         ]);
     }

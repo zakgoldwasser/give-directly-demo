@@ -21,7 +21,6 @@ class ReferenceScenarioTest extends TestCase
         parent::setUp();
 
         Storage::fake('imports');
-        config(['reconciliation.allow_arbitrary_uploads' => false]);
     }
 
     public function test_manifest_checksums_and_declared_row_counts_match_the_versioned_fixtures(): void
@@ -137,7 +136,7 @@ class ReferenceScenarioTest extends TestCase
         $this->assertSame('payouts', $batch->context['report_type']);
     }
 
-    public function test_public_mode_rejects_a_valid_fixture_uploaded_as_the_wrong_report_type(): void
+    public function test_fixture_uploaded_as_another_report_type_does_not_inherit_fixture_context(): void
     {
         $catalog = app(ReferenceFixtureCatalog::class);
         $this->post(route('try.start'), ['intent' => 'scenarios']);
@@ -150,9 +149,11 @@ class ReferenceScenarioTest extends TestCase
             ),
         ]);
 
-        $response->assertUnprocessable();
-        $response->assertJsonPath('error.code', 'PUBLIC_FIXTURE_REQUIRED');
-        $this->assertDatabaseCount('import_batches', 0);
+        $response->assertCreated();
+        $batch = ImportBatch::query()->firstOrFail();
+        $this->assertSame('crm', $batch->report_type);
+        $this->assertNull($batch->context);
+        $this->assertSame(ImportBatch::STATUS_MAPPING_REQUIRED, $batch->status);
     }
 
     public function test_resetting_a_guided_demo_loads_a_fresh_reference_set(): void

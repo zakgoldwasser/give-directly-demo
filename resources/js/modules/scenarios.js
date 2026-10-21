@@ -94,7 +94,7 @@ export function initScenarios(root = document) {
     forms.forEach((form) => {
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
-            if (loading || readyUrl) return;
+            if (loading || readyUrl || form.querySelector('button[type="submit"]').disabled) return;
 
             const body = new FormData(form);
             const label = form.querySelector('[data-scenario-label]');

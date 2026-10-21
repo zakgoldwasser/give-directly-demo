@@ -20,7 +20,6 @@ class ReconciliationEngineTest extends TestCase
         parent::setUp();
 
         Storage::fake('imports');
-        config(['reconciliation.allow_arbitrary_uploads' => false]);
     }
 
     public function test_reference_reports_create_a_conservative_baseline_run_with_explainable_payout_results(): void

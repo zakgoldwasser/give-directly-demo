@@ -20,7 +20,6 @@ class RunHistoryTest extends TestCase
 
         Storage::fake('imports');
         Storage::fake('exports');
-        config(['reconciliation.allow_arbitrary_uploads' => false]);
     }
 
     public function test_workspace_history_links_the_full_reconciliation_audit_chain(): void

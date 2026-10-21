@@ -21,7 +21,6 @@ class MappingValidationTest extends TestCase
         parent::setUp();
 
         Storage::fake('imports');
-        config(['reconciliation.allow_arbitrary_uploads' => true]);
         $this->post(route('try.start'), ['intent' => 'scenarios']);
     }
 

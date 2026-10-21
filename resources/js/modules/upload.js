@@ -35,8 +35,10 @@ function initUploadForm(form) {
     const maxBytes = Number(form.dataset.maxBytes || 0);
     let busy = false;
     let navigating = false;
+    let restoreControls = () => {};
 
     window.addEventListener('pageshow', () => {
+        restoreControls();
         busy = false;
         navigating = false;
         setText(progressEl, '');
@@ -109,7 +111,7 @@ function initUploadForm(form) {
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
-        if (busy) return;
+        if (busy || submitButton.disabled) return;
         clearError();
 
         const file = fileInput?.files?.[0];
@@ -129,6 +131,14 @@ function initUploadForm(form) {
         const body = new FormData(form);
         busy = true;
         const restoreButton = setBusy(submitButton, 'Uploading…');
+        const controls = [...document.querySelectorAll('form button[type="submit"], form button:not([type]), form input[type="submit"]')]
+            .filter((control) => control !== submitButton);
+        const disabledStates = controls.map((control) => control.disabled);
+        restoreControls = () => {
+            controls.forEach((control, index) => { control.disabled = disabledStates[index]; });
+            restoreButton();
+        };
+        controls.forEach((control) => { control.disabled = true; });
         progressEl?.classList.remove('hidden');
         setText(progressEl, 'Uploading…');
 
@@ -185,7 +195,7 @@ function initUploadForm(form) {
         } finally {
             if (!navigating) {
                 busy = false;
-                restoreButton();
+                restoreControls();
                 setText(progressEl, '');
                 progressEl?.classList.add('hidden');
             }

@@ -20,10 +20,9 @@ class ImportFlowTest extends TestCase
         parent::setUp();
 
         Storage::fake('imports');
-        config(['reconciliation.allow_arbitrary_uploads' => true]);
     }
 
-    public function test_local_upload_stages_typed_report_rows_synchronously(): void
+    public function test_upload_stages_typed_report_rows_synchronously(): void
     {
         $this->startWorkspace();
 
@@ -42,21 +41,74 @@ class ImportFlowTest extends TestCase
         $this->assertSame('D001', ImportRow::query()->orderBy('row_number')->firstOrFail()->raw_data['transaction_id']);
     }
 
-    public function test_public_mode_rejects_arbitrary_upload_before_persisting_it(): void
+    public function test_homepage_upload_creates_a_workspace_and_accepts_custom_csv(): void
     {
-        config([
-            'reconciliation.allow_arbitrary_uploads' => false,
-        ]);
-        $this->startWorkspace();
-
-        $response = $this->postJson(route('try.imports.store'), [
+        $response = $this->postJson(route('try.upload'), [
             'report_type' => 'donations',
             'file' => $this->csvUpload("transaction_id,gross_amount\nD001,100.00\n"),
         ]);
 
-        $response->assertUnprocessable();
-        $response->assertJsonPath('error.code', 'PUBLIC_FIXTURE_REQUIRED');
+        $batch = ImportBatch::query()->firstOrFail();
+        $response->assertCreated()->assertJsonPath('data.redirect', route('try.imports.show', $batch));
+        $this->assertDatabaseCount('guest_workspaces', 1);
+        $this->assertSame(ImportBatch::STATUS_MAPPING_REQUIRED, $batch->status);
+        $this->assertNull($batch->context);
+        $this->get(route('try.imports.show', $batch))->assertOk();
+        $this->get(route('try.show'))->assertOk()->assertDontSee('Public demo uploads must match');
+    }
+
+    public function test_homepage_uploads_share_a_workspace_and_retries_are_idempotent(): void
+    {
+        $data = ['report_type' => 'donations', 'idempotency_key' => 'homepage-upload-1'];
+        $csv = "transaction_id,gross_amount\nCUSTOM001,25.00\n";
+        $first = $this->postJson(route('try.upload'), [...$data, 'file' => $this->csvUpload($csv)]);
+        $first->assertCreated();
+        $this->postJson(route('try.upload'), [...$data, 'file' => $this->csvUpload($csv)])
+            ->assertCreated()->assertHeader('Idempotency-Replayed', 'true')
+            ->assertJsonPath('data.id', $first->json('data.id'));
+        $this->post(route('try.upload'), [
+            'report_type' => 'crm',
+            'file' => $this->csvUpload("crm_record_id,gross_amount\nCUSTOMCRM001,25.00\n", 'crm.csv'),
+        ])->assertRedirect();
+        $this->assertDatabaseCount('guest_workspaces', 1);
+        $this->assertDatabaseCount('import_batches', 2);
+    }
+
+    public function test_homepage_upload_does_not_mix_custom_files_with_a_sample_workspace(): void
+    {
+        $this->post(route('try.start'), ['intent' => 'guided'])->assertRedirect();
+        $sample = GuestWorkspace::query()->firstOrFail();
+        $response = $this->postJson(route('try.upload'), [
+            'report_type' => 'donations',
+            'file' => $this->csvUpload("transaction_id,gross_amount\nCUSTOM001,25.00\n"),
+        ])->assertCreated();
+        $batch = ImportBatch::findOrFail($response->json('data.id'));
+        $this->assertNotSame($sample->id, $batch->guest_workspace_id);
+        $this->assertSame(3, $sample->importBatches()->count());
+        $this->assertDatabaseCount('guest_workspaces', 2);
+    }
+
+    public function test_invalid_homepage_upload_does_not_create_a_workspace(): void
+    {
+        $this->postJson(route('try.upload'), ['report_type' => 'donations'])->assertUnprocessable();
+        $this->postJson(route('try.upload'), [
+            'report_type' => 'unknown', 'file' => $this->csvUpload("id\n001\n"),
+        ])->assertUnprocessable();
+        config(['reconciliation.max_csv_size_bytes' => 1024]);
+        $this->postJson(route('try.upload'), [
+            'report_type' => 'donations', 'file' => UploadedFile::fake()->create('large.csv', 2),
+        ])->assertUnprocessable();
+        $this->assertDatabaseCount('guest_workspaces', 0);
         $this->assertDatabaseCount('import_batches', 0);
+    }
+
+    public function test_homepage_upload_respects_workspace_availability(): void
+    {
+        config(['reconciliation.new_workspaces_enabled' => false]);
+        $this->postJson(route('try.upload'), [
+            'report_type' => 'donations', 'file' => $this->csvUpload("id\n001\n"),
+        ])->assertStatus(503)->assertJsonPath('error.code', 'NEW_WORKSPACES_DISABLED');
+        $this->assertDatabaseCount('guest_workspaces', 0);
     }
 
     public function test_repeat_file_is_duplicate_only_within_the_same_report_type(): void

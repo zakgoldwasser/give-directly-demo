@@ -6,8 +6,7 @@ The application currently provides isolated temporary workspaces, private CSV st
 
 ## Demonstration boundary
 
-- Public mode accepts only catalogued synthetic fixtures.
-- Local evaluation can explicitly enable arbitrary CSV files.
+- Use a catalogued synthetic sample or upload your own donation, payout, and CRM CSVs.
 - The application does not write to Salesforce or verify bank receipt.
 - Report schemas and rules are proposed demonstration contracts.
 
@@ -57,15 +56,9 @@ docker compose exec laravel.test php artisan test
 docker compose exec laravel.test node --test tests/JavaScript/feedback.test.js
 ```
 
-## Local evaluation uploads
+## CSV uploads
 
-Arbitrary CSV uploads are disabled by default. To enable them only in a local evaluation environment, set:
-
-```dotenv
-RECONCILIATION_ALLOW_ARBITRARY_UPLOADS=true
-```
-
-The workspace presents separate report slots for donations, payouts, and a CRM snapshot. Public deployments must leave this value false and configure the approved fixture checksums instead.
+Below the sample datasets, choose a donation, payout, or CRM CSV to upload. The first upload starts a temporary workspace separate from any sample; subsequent uploads use the same upload workspace. Review and map each file’s columns, then add the remaining reports in the workspace. File-size, row-count, validation, rate, and processing limits apply to all uploads.
 
 ## Reviewed export package
 

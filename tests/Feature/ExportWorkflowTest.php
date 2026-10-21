@@ -20,7 +20,6 @@ class ExportWorkflowTest extends TestCase
 
         Storage::fake('imports');
         Storage::fake('exports');
-        config(['reconciliation.allow_arbitrary_uploads' => false]);
     }
 
     public function test_approved_actions_produce_an_idempotent_private_export_package(): void

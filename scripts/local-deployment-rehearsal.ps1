@@ -85,7 +85,6 @@ try {
         'RECONCILIATION_STORAGE_DRIVER=local'
         "RECONCILIATION_READINESS_SECRET=$readinessSecret"
         "CRON_SECRET=$cronSecret"
-        'RECONCILIATION_ALLOW_ARBITRARY_UPLOADS=false'
     )
     [System.IO.File]::WriteAllLines(
         $envFile,

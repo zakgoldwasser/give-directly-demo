@@ -19,6 +19,8 @@ class GuestWorkspaceTest extends TestCase
         $response->assertOk();
         $response->assertSee('Choose a sample dataset', false);
         $response->assertSee('View sample CSVs', false);
+        $response->assertSeeInOrder(['Choose a sample dataset', 'Upload your CSVs', 'Upload donations', 'Upload payouts', 'Upload CRM snapshot']);
+        $response->assertSee(route('try.upload'), false);
         $response->assertDontSee('Log in', false);
         $response->assertDontSee('Sign up', false);
     }

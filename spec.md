@@ -14,7 +14,7 @@ The complete specification is stored in [`docs/Partner_Donation_Reconciliation_S
 
 Build one complete workflow that loads partner donation reports, payout reports, and an existing CRM snapshot; validates and reconciles the evidence; supports audited exception review; produces a reviewed import package; and compares a refreshed CRM snapshot with the exported expectations.
 
-The public application is an independent demonstration using synthetic data and isolated temporary workspaces. Public uploads are restricted to the supplied fixture catalog. Arbitrary CSV files require an explicit local-evaluation configuration value.
+The public application is an independent demonstration with synthetic sample datasets and isolated temporary workspaces. Users can upload their own CSVs from the homepage without a configuration flag. This upload behavior supersedes the fixture-only restriction in the retained complete specification.
 
 ## Required first release
 
@@ -40,6 +40,6 @@ Live Salesforce writes, real CAF adapters, bank-statement matching, multiple cur
 - A 20-second application deadline, 30-second function maximum, and 60-second operation lease.
 - Configurable per-session and per-IP limits, initially 5 workspace starts and 10 imports or runs per minute.
 - Workspaces expire after 24 hours; cleanup completes within the following 24 hours.
-- Public fixture checksums are verified before file contents are persisted.
+- Bundled sample fixture checksums are verified; uploaded CSVs retain checksums for evidence and duplicate detection.
 
 When this summary and the retained complete specification differ, the complete specification controls.

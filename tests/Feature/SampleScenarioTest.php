@@ -24,7 +24,6 @@ class SampleScenarioTest extends TestCase
 
         Storage::fake('imports');
         Storage::fake('exports');
-        config(['reconciliation.allow_arbitrary_uploads' => false]);
     }
 
     public function test_landing_and_empty_workspace_offer_described_one_click_samples(): void
