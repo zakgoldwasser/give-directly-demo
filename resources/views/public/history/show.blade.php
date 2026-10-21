@@ -172,7 +172,7 @@
                         <p class="font-medium text-emerald-950">Export {{ $export->id }}</p>
                         <p class="mt-1 text-emerald-800">{{ $export->counts['creates'] }} creates · {{ $export->counts['updates'] }} updates · {{ $export->counts['held'] }} held · {{ str_replace('_', ' ', $export->status) }}</p>
                     </div>
-                    <a class="font-medium text-emerald-700 hover:text-emerald-800" href="{{ route('try.exports.download', $export) }}">Download ZIP</a>
+                    <a data-download-feedback class="font-medium text-emerald-700 hover:text-emerald-800" href="{{ route('try.exports.download', $export) }}">Download ZIP</a>
                 </div>
 
                 @foreach ($export->confirmations as $confirmation)

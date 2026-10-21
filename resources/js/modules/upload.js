@@ -1,3 +1,5 @@
+import { setBusy } from './feedback.js';
+
 function csrfToken() {
     const meta = document.querySelector('meta[name="csrf-token"]');
 
@@ -31,6 +33,15 @@ function initUploadForm(form) {
     const progressEl = form.querySelector('[data-upload-progress]');
     const submitButton = form.querySelector('[data-upload-submit]');
     const maxBytes = Number(form.dataset.maxBytes || 0);
+    let busy = false;
+    let navigating = false;
+
+    window.addEventListener('pageshow', () => {
+        busy = false;
+        navigating = false;
+        setText(progressEl, '');
+        progressEl?.classList.add('hidden');
+    });
 
     function showError(message) {
         if (!errorEl) {
@@ -98,6 +109,7 @@ function initUploadForm(form) {
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
+        if (busy) return;
         clearError();
 
         const file = fileInput?.files?.[0];
@@ -115,7 +127,8 @@ function initUploadForm(form) {
         }
 
         const body = new FormData(form);
-        submitButton?.setAttribute('disabled', 'disabled');
+        busy = true;
+        const restoreButton = setBusy(submitButton, 'Uploading…');
         progressEl?.classList.remove('hidden');
         setText(progressEl, 'Uploading…');
 
@@ -134,7 +147,10 @@ function initUploadForm(form) {
             const payload = await response.json().catch(() => ({}));
 
             if (response.status === 409 && payload?.data?.redirect) {
+                setBusy(submitButton, 'Opening import…');
+                setText(progressEl, 'Opening existing import…');
                 window.location.assign(payload.data.redirect);
+                navigating = true;
 
                 return;
             }
@@ -154,7 +170,9 @@ function initUploadForm(form) {
 
             if (redirect) {
                 setText(progressEl, 'Upload complete. Opening import…');
+                setBusy(submitButton, 'Opening import…');
                 window.location.assign(redirect);
+                navigating = true;
 
                 return;
             }
@@ -165,7 +183,12 @@ function initUploadForm(form) {
             setText(progressEl, '');
             progressEl?.classList.add('hidden');
         } finally {
-            submitButton?.removeAttribute('disabled');
+            if (!navigating) {
+                busy = false;
+                restoreButton();
+                setText(progressEl, '');
+                progressEl?.classList.add('hidden');
+            }
         }
     });
 }

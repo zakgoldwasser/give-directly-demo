@@ -8,13 +8,13 @@
         <div>
             <p class="text-sm font-medium uppercase tracking-wide text-emerald-700">Independent demo · Synthetic data</p>
             <h1 class="mt-2 text-3xl font-semibold tracking-tight text-stone-900">Reconciliation workspace</h1>
-            <p class="mt-3 max-w-2xl text-stone-600">{{ $selectedScenario ? 'Your sample donation, payout, and CRM reports are loaded. Review the results below.' : 'Choose a sample to load all three reports automatically, or upload reports below.' }}</p>
+            <p class="mt-3 max-w-2xl text-stone-600">{{ $selectedScenario ? 'Your sample donation, payout, and CRM reports have been processed. Review the results below.' : 'Choose a sample to process all three reports automatically, or upload reports below.' }}</p>
         </div>
         <div class="flex flex-wrap gap-3">
             @if ($reconciliationRun)
                 <a class="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50" href="{{ route('try.history.index') }}">View run history</a>
             @endif
-            <form method="POST" action="{{ route('try.reset') }}">
+            <form method="POST" action="{{ route('try.reset') }}" data-busy-form="Resetting workspace…">
                 @csrf
                 <button class="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50">Reset workspace</button>
             </form>
@@ -23,7 +23,7 @@
 
     @if ($selectedScenario)
         <section class="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-5" aria-labelledby="selected-scenario-heading">
-            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Sample loaded · {{ $selectedScenario['badge'] }}</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Sample processed · {{ $selectedScenario['badge'] }}</p>
             <h2 id="selected-scenario-heading" class="mt-1 text-xl font-semibold text-stone-900">{{ $selectedScenario['title'] }}</h2>
             <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
                 <div><dt class="font-semibold text-stone-800">What the CSVs contain</dt><dd class="mt-1 text-stone-600">{{ $selectedScenario['contains'] }}</dd></div>
@@ -34,7 +34,7 @@
 
     <details class="mt-6 rounded-xl border border-stone-200 bg-stone-50 p-5" @if (! $selectedScenario) open @endif>
         <summary class="cursor-pointer font-semibold text-emerald-800">{{ $selectedScenario ? 'Try another sample dataset' : 'Choose a sample dataset' }}</summary>
-        <p class="mt-3 mb-5 text-sm text-stone-600">Selecting a sample starts a fresh workspace with all three reports loaded. Review decisions are separate for each workspace.</p>
+        <p class="mt-3 mb-5 text-sm text-stone-600">Processing a sample starts a fresh workspace and checks all three reports. Review decisions are separate for each workspace.</p>
         @include('public.scenario-cards', ['sampleScenarios' => $sampleScenarios, 'selectedScenarioId' => $selectedScenario ? $selectedScenarioId : null])
     </details>
 
@@ -172,7 +172,7 @@
                 <div class="mt-6 space-y-4">
                     <h3 class="text-sm font-semibold text-stone-900">Map campaign codes</h3>
                     @foreach ($reviewOptions['campaigns'] as $campaign)
-                        <form class="rounded-lg border border-amber-200 bg-white p-4" method="POST" action="{{ route('try.review.campaigns.store') }}">
+                        <form class="rounded-lg border border-amber-200 bg-white p-4" method="POST" action="{{ route('try.review.campaigns.store') }}" data-busy-form="Saving mapping and reconciling…">
                             @csrf
                             <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                             <input type="hidden" name="campaign_code" value="{{ $campaign['campaign_code'] }}">
@@ -197,7 +197,7 @@
                 <div class="mt-6 space-y-4">
                     <h3 class="text-sm font-semibold text-stone-900">Confirm CRM candidates</h3>
                     @foreach ($reviewOptions['matches'] as $matchIndex => $match)
-                        <form class="rounded-lg border border-amber-200 bg-white p-4" method="POST" action="{{ route('try.review.matches.store') }}">
+                        <form class="rounded-lg border border-amber-200 bg-white p-4" method="POST" action="{{ route('try.review.matches.store') }}" data-busy-form="Confirming match…">
                             @csrf
                             <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                             <input type="hidden" name="transaction_id" value="{{ $match['transaction_id'] }}">
@@ -286,7 +286,7 @@
                 @if ($reviewOptions['campaigns'] !== [] || $reviewOptions['matches'] !== [])
                     <p class="mt-4 text-sm text-amber-800">Finish the campaign and candidate reviews above before approving this run.</p>
                 @else
-                    <form class="mt-5" method="POST" action="{{ route('try.approvals.store') }}">
+                    <form class="mt-5" method="POST" action="{{ route('try.approvals.store') }}" data-busy-form="Approving changes…">
                         @csrf
                         <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                         <input type="hidden" name="run_id" value="{{ $reconciliationRun->id }}">
@@ -294,7 +294,7 @@
                     </form>
                 @endif
             @elseif ($exportBatch === null)
-                <form class="mt-5" method="POST" action="{{ route('try.exports.store') }}">
+                <form class="mt-5" method="POST" action="{{ route('try.exports.store') }}" data-busy-form="Preparing export…">
                     @csrf
                     <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                     <input type="hidden" name="run_id" value="{{ $reconciliationRun->id }}">
@@ -305,14 +305,14 @@
                     <p class="font-medium">Reviewed package ready</p>
                     <p class="mt-1">{{ $exportBatch->counts['creates'] }} creates · {{ $exportBatch->counts['updates'] }} updates · {{ $exportBatch->counts['held'] }} held exclusions</p>
                     <p class="mt-1 text-xs text-emerald-800">Downloading records delivery of the package only. It does not write to a CRM.</p>
-                    <a class="mt-3 inline-flex rounded-lg bg-emerald-700 px-4 py-2 font-medium text-white hover:bg-emerald-800" href="{{ route('try.exports.download', $exportBatch) }}">Download ZIP</a>
+                    <a data-download-feedback class="mt-3 inline-flex rounded-lg bg-emerald-700 px-4 py-2 font-medium text-white hover:bg-emerald-800" href="{{ route('try.exports.download', $exportBatch) }}">Download ZIP</a>
                 </div>
 
                 @if ($confirmationBatch === null)
                     <div class="mt-4 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sm text-sky-950">
                         <p class="font-medium">Check the exported actions against a later snapshot</p>
                         <p class="mt-1 text-xs text-sky-800">The guided demo uses a fixed, complete post-import CRM snapshot and compares only the approved destination fields.</p>
-                        <form class="mt-3" method="POST" action="{{ route('try.exports.confirm', $exportBatch) }}">
+                        <form class="mt-3" method="POST" action="{{ route('try.exports.confirm', $exportBatch) }}" data-busy-form="Checking CRM confirmation…">
                             @csrf
                             <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                             <button class="rounded-lg bg-sky-700 px-4 py-2 font-medium text-white hover:bg-sky-800" type="submit">Simulate CRM confirmation</button>
@@ -377,7 +377,7 @@
                         </div>
                         <p class="mt-3 text-xs text-sky-800">Snapshot agreement confirms the recorded values. It does not prove that an external CRM import ran.</p>
                         @if ($confirmationBatch->verification_reconciliation_run_id === null && $verificationEligible)
-                            <form class="mt-3" method="POST" action="{{ route('try.confirmations.verify', $confirmationBatch) }}">
+                            <form class="mt-3" method="POST" action="{{ route('try.confirmations.verify', $confirmationBatch) }}" data-busy-form="Verifying imported changes…">
                                 @csrf
                                 <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                                 <button class="rounded-lg bg-sky-700 px-4 py-2 font-medium text-white hover:bg-sky-800" type="submit">Run post-import verification</button>
@@ -430,7 +430,7 @@
                 <h2 class="text-lg font-semibold text-stone-900">{{ $label }}</h2>
                 <p class="mt-2 text-sm text-stone-600">{{ $description }}</p>
 
-                <a class="mt-4 inline-flex text-sm font-medium text-emerald-700 hover:text-emerald-800" href="{{ route('reference-fixtures.download', ['reportType' => $type, 'scenario_id' => $selectedScenarioId ?? 'reference_v1']) }}">
+                <a data-download-feedback class="mt-4 inline-flex text-sm font-medium text-emerald-700 hover:text-emerald-800" href="{{ route('reference-fixtures.download', ['reportType' => $type, 'scenario_id' => $selectedScenarioId ?? 'reference_v1']) }}">
                     Download sample · {{ number_format($fixture['expected_rows']) }} rows
                 </a>
 
@@ -465,7 +465,7 @@
                             <input class="sr-only" type="file" name="file" accept=".csv,text/csv" data-file-input>
                         </label>
                         <p class="mt-3 hidden text-sm text-red-700" data-upload-error role="alert"></p>
-                        <p class="mt-3 hidden text-sm text-stone-600" data-upload-progress></p>
+                        <p class="mt-3 hidden text-sm text-stone-600" role="status" data-upload-progress></p>
                         <button class="mt-4 w-full rounded-lg bg-emerald-700 px-4 py-2 font-medium text-white hover:bg-emerald-800" type="submit" data-upload-submit>Load report</button>
                     </form>
                     @unless ($arbitraryUploadsAllowed)

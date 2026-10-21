@@ -64,8 +64,8 @@
         <div class="border-t border-stone-200 bg-stone-50 p-5">
             <p class="text-sm text-stone-700" role="status" data-scenario-status></p>
             <p class="text-sm text-red-800" role="alert" data-scenario-error></p>
-            <a hidden data-scenario-results class="mt-3 inline-flex rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">View reconciliation</a>
-            <p class="mt-2 text-xs text-stone-500">You can keep browsing these CSVs while a sample loads. When its results are ready, this preview stays open.</p>
+            @include('public.scenario-results-link')
+            <p class="mt-2 text-xs text-stone-500">You can keep browsing these CSVs while a sample is processing. When its results are ready, this preview stays open.</p>
         </div>
     </dialog>
 @endforeach

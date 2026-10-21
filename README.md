@@ -35,9 +35,11 @@ Open [http://localhost](http://localhost).
 
 ## Sample datasets
 
-The landing page and workspace offer four sample cards. Each explains what its CSVs contain and what it demonstrates, with separate **View sample CSVs** and **Load this sample** controls. Loading populates a fresh workspace and runs reconciliation without downloading or uploading files. Reset reloads the selected sample. Optional report downloads remain available.
+The landing page and workspace offer four sample cards. Each explains what its CSVs contain and what it demonstrates, with separate **View sample CSVs** and **Process this sample** controls. Processing populates a fresh workspace and runs reconciliation without downloading or uploading files. Reset reloads the selected sample. Optional report downloads remain available.
 
-CSV previews are embedded from the checksum-verified source fixtures, with Donations, Payouts, and CRM tabs. Scenario annotations highlight important rows and explain why they matter; the **Only show highlighted rows** filter retains the original row numbers and values. Previewing does not create a workspace or make a network request. With JavaScript enabled, loading uses a background request and leaves preview controls active. If a preview is open when loading finishes, it stays open and offers **View reconciliation**. Otherwise the browser opens the results automatically. Loading errors keep the previews usable and allow a retry; ordinary form navigation remains the fallback without JavaScript.
+CSV previews are embedded from the checksum-verified source fixtures, with Donations, Payouts, and CRM tabs. Scenario annotations highlight important rows and explain why they matter; the **Only show highlighted rows** filter retains the original row numbers and values. Previewing does not create a workspace or make a network request. With JavaScript enabled, processing uses a background request and leaves preview controls active. If a preview is open when processing finishes, it stays open and offers **View reconciliation**. Otherwise the browser opens the results automatically. Opening the reconciliation shows a spinner and navigation status until the next page appears. Processing errors keep the previews usable and allow a retry; ordinary form navigation remains the fallback without JavaScript.
+
+Review, mapping, approval, export, confirmation, verification, reset, and expired-session submissions show action-specific spinners and prevent repeat submissions through navigation. Internal page links show opening feedback; same-page anchors, external links, and modified clicks retain their normal behavior. Downloads briefly show “Download requested” rather than claiming completion. Upload controls stay busy until navigation, recover on errors, and reset with the other controls when returning with browser Back.
 
 | Sample | CSV contents | Demonstrates |
 | --- | --- | --- |
@@ -52,6 +54,7 @@ Run the tests with:
 
 ```powershell
 docker compose exec laravel.test php artisan test
+docker compose exec laravel.test node --test tests/JavaScript/feedback.test.js
 ```
 
 ## Local evaluation uploads

@@ -32,10 +32,10 @@ class SampleScenarioTest extends TestCase
         $this->get(route('landing'))->assertOk()
             ->assertSee('What the CSVs contain')
             ->assertSee('What it demonstrates')
-            ->assertSee('Load sample: Update this month’s donations')
-            ->assertSee('Load sample: Resolve records that need review')
-            ->assertSee('Load sample: Explain a payout difference')
-            ->assertSee('Load sample: Full reconciliation example');
+            ->assertSee('Process sample: Update this month’s donations')
+            ->assertSee('Process sample: Resolve records that need review')
+            ->assertSee('Process sample: Explain a payout difference')
+            ->assertSee('Process sample: Full reconciliation example');
 
         $this->post(route('try.start'), ['intent' => 'scenarios'])->assertRedirect(route('try.show'));
         $this->get(route('try.show'))->assertOk()->assertSee('Choose a sample dataset');
@@ -68,7 +68,7 @@ class SampleScenarioTest extends TestCase
             ->assertSee($choice['title'])
             ->assertSee($choice['contains'])
             ->assertSee($choice['demonstrates'])
-            ->assertSee('Currently loaded')
+            ->assertSee('Currently processed')
             ->assertDontSee('@if')
             ->assertDontSee('Choose CSV');
     }
@@ -174,9 +174,9 @@ class SampleScenarioTest extends TestCase
         ])->assertRedirect();
         $this->assertSame($scenarioId, ImportBatch::query()->sole()->context['scenario_id']);
         $this->get(route('try.show'))->assertOk()
-            ->assertSee('Load sample: '.$catalog->choices()[$scenarioId]['title'])
-            ->assertDontSee('Currently loaded')
-            ->assertDontSee('Your sample donation, payout, and CRM reports are loaded.');
+            ->assertSee('Process sample: '.$catalog->choices()[$scenarioId]['title'])
+            ->assertDontSee('Currently processed')
+            ->assertDontSee('Your sample donation, payout, and CRM reports have been processed.');
     }
 
     public function test_unknown_sample_download_is_not_found(): void

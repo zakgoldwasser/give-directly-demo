@@ -23,7 +23,7 @@
 
     <section id="sample-scenarios" class="mt-12 scroll-mt-6" aria-labelledby="sample-scenarios-heading">
         <h2 id="sample-scenarios-heading" class="text-2xl font-semibold text-stone-900">Choose a sample dataset</h2>
-        <p class="mt-2 mb-6 text-stone-600">Preview the source CSVs or load all three reports. You can keep exploring the previews while your sample loads.</p>
+        <p class="mt-2 mb-6 text-stone-600">Preview the source CSVs or process all three reports. You can keep exploring the previews while your sample is processing.</p>
         @if ($errors->any())
             <p class="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-900" role="alert">{{ $errors->first() }}</p>
         @endif

@@ -13,7 +13,7 @@
             You can start again with a fresh workspace. No account is required.
         </p>
         <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <form method="POST" action="{{ route('try.start') }}">
+            <form method="POST" action="{{ route('try.start') }}" data-busy-form="Processing sample…">
                 @csrf
                 <input type="hidden" name="intent" value="guided">
                 <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800">

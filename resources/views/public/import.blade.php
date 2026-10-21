@@ -99,7 +99,7 @@
         <details class="mt-6 rounded-xl border border-stone-200 bg-white p-5" @if ($batch->status === \App\Models\ImportBatch::STATUS_MAPPING_REQUIRED) open @endif>
             <summary class="cursor-pointer font-semibold text-stone-900">Column mapping</summary>
             <p class="mt-2 text-sm text-stone-600">Each canonical field is mapped by header name. Saving creates an immutable mapping version and reruns validation.</p>
-            <form class="mt-5 grid gap-4 sm:grid-cols-2" method="POST" action="{{ route('try.imports.mapping.store', $batch) }}">
+            <form class="mt-5 grid gap-4 sm:grid-cols-2" method="POST" action="{{ route('try.imports.mapping.store', $batch) }}" data-busy-form="Validating report…">
                 @csrf
                 <input type="hidden" name="idempotency_key" value="{{ (string) Str::uuid() }}">
                 @foreach ($schemaFields as $canonicalField => $definition)

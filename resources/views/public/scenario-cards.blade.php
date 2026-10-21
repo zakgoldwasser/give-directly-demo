@@ -26,9 +26,9 @@
                     @csrf
                     <input type="hidden" name="intent" value="guided">
                     <input type="hidden" name="scenario_id" value="{{ $scenarioId }}">
-                    <button type="submit" aria-label="{{ $isSelected ? 'Loaded: ' : 'Load sample: ' }}{{ $sample['title'] }}" @disabled($isSelected)
+                    <button type="submit" aria-label="{{ $isSelected ? 'Processed: ' : 'Process sample: ' }}{{ $sample['title'] }}" @disabled($isSelected)
                         class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-default disabled:opacity-60">
-                        <span data-scenario-label>{{ $isSelected ? 'Currently loaded' : 'Load this sample' }}</span>
+                        <span data-scenario-label>{{ $isSelected ? 'Currently processed' : 'Process this sample' }}</span>
                     </button>
                 </form>
             </div>
@@ -38,6 +38,6 @@
 <div hidden class="mt-4 rounded-lg border border-stone-200 bg-white p-4" data-scenario-feedback>
     <p class="text-sm text-stone-700" role="status" data-scenario-status></p>
     <p class="text-sm text-red-800" role="alert" data-scenario-error></p>
-    <a hidden data-scenario-results class="mt-3 inline-flex rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">View reconciliation</a>
+    @include('public.scenario-results-link')
 </div>
 @include('public.scenario-previews', ['sampleScenarios' => $sampleScenarios, 'samplePreviews' => $samplePreviews])

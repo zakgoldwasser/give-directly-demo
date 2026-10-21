@@ -3,7 +3,30 @@ export function initScenarios(root = document) {
     const forms = [...root.querySelectorAll('[data-scenario-form]')];
     let loading = false;
     let readyUrl = null;
+    let navigating = false;
     let restoreControls = () => {};
+
+    function showNavigationLoader() {
+        navigating = true;
+        root.querySelectorAll('[data-scenario-results]').forEach((link) => {
+            link.setAttribute('aria-disabled', 'true');
+            link.setAttribute('aria-busy', 'true');
+            link.querySelector('[data-results-spinner]').hidden = false;
+            link.querySelector('[data-results-label]').textContent = 'Opening reconciliation…';
+        });
+        message('[data-scenario-status]', 'Opening reconciliation…');
+    }
+
+    root.querySelectorAll('[data-scenario-results]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            if (navigating) {
+                event.preventDefault();
+                return;
+            }
+            showNavigationLoader();
+        });
+    });
 
     function message(selector, text) {
         root.querySelectorAll(selector).forEach((element) => {
@@ -76,18 +99,22 @@ export function initScenarios(root = document) {
             const body = new FormData(form);
             const label = form.querySelector('[data-scenario-label]');
             const originalLabel = label.textContent;
+            const submitButton = form.querySelector('button[type="submit"]');
+            const originalAriaLabel = submitButton.getAttribute('aria-label');
             const controls = [...root.querySelectorAll('form button[type="submit"], form button:not([type]), form input[type="submit"]')];
             const disabledStates = controls.map((control) => control.disabled);
             restoreControls = () => {
                 controls.forEach((control, index) => { control.disabled = disabledStates[index]; });
                 label.textContent = originalLabel;
+                submitButton.setAttribute('aria-label', originalAriaLabel);
             };
             controls.forEach((control) => { control.disabled = true; });
             root.querySelector('[data-scenario-feedback]').hidden = false;
             loading = true;
-            label.textContent = 'Loading three reports…';
+            label.textContent = 'Processing…';
+            submitButton.setAttribute('aria-label', `Processing “${form.dataset.scenarioTitle}”`);
             message('[data-scenario-error]', '');
-            message('[data-scenario-status]', `Loading “${form.dataset.scenarioTitle}”. You can view any sample’s CSVs while we check the reports.`);
+            message('[data-scenario-status]', `Processing “${form.dataset.scenarioTitle}”. You can view any sample’s CSVs while we check the reports.`);
 
             try {
                 const response = await fetch(form.action, {
@@ -99,12 +126,12 @@ export function initScenarios(root = document) {
                 const payload = await response.json().catch(() => ({}));
                 if (!response.ok) {
                     const error = response.status === 419
-                        ? 'Your session expired. Refresh the page before loading a sample.'
+                        ? 'Your session expired. Refresh the page before processing a sample.'
                         : response.status === 429
                             ? 'Too many sample starts. Wait a minute, then try again.'
                             : response.status >= 500
-                                ? 'The sample could not finish loading. Please try again.'
-                                : payload?.error?.message || payload?.message || 'The sample could not be loaded. Please try again.';
+                                ? 'The sample could not finish processing. Please try again.'
+                                : payload?.error?.message || payload?.message || 'The sample could not be processed. Please try again.';
                     throw new Error(error);
                 }
                 const redirect = payload?.data?.redirect;
@@ -113,15 +140,17 @@ export function initScenarios(root = document) {
                 }
                 readyUrl = redirect;
                 label.textContent = 'Results ready';
+                submitButton.setAttribute('aria-label', `Results ready for “${form.dataset.scenarioTitle}”`);
                 message('[data-scenario-status]', `Results ready for “${form.dataset.scenarioTitle}”. View reconciliation when you’re ready.`);
                 showResults(redirect);
                 if (!dialogs.some((dialog) => dialog.open)) {
+                    showNavigationLoader();
                     window.location.assign(redirect);
                 }
             } catch (error) {
                 message('[data-scenario-status]', '');
                 message('[data-scenario-error]', error instanceof TypeError
-                    ? 'Connection interrupted. You can keep viewing the CSVs. Refresh to check your workspace, or try loading again.'
+                    ? 'Connection interrupted. You can keep viewing the CSVs. Refresh to check your workspace, or try processing again.'
                     : error.message);
                 restoreControls();
             } finally {
@@ -131,6 +160,13 @@ export function initScenarios(root = document) {
     });
 
     window.addEventListener('pageshow', (event) => {
+        navigating = false;
+        root.querySelectorAll('[data-scenario-results]').forEach((link) => {
+            link.removeAttribute('aria-disabled');
+            link.setAttribute('aria-busy', 'false');
+            link.querySelector('[data-results-spinner]').hidden = true;
+            link.querySelector('[data-results-label]').textContent = 'View reconciliation';
+        });
         if (event.persisted) {
             restoreControls();
             loading = false;

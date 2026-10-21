@@ -30,6 +30,7 @@
     </header>
 
     <main>
+        <p class="sr-only" role="status" data-action-status></p>
         @yield('content')
     </main>
 
