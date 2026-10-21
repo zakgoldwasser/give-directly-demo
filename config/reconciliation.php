@@ -83,7 +83,7 @@ return [
         'NEW-PROGRAM' => 'CAMPAIGN-NEW-PROGRAM',
     ],
 
-    'github_url' => filled(env('RECONCILIATION_GITHUB_URL'))
+    'github_url' => filled(env('RECONCILIATION_GITHUB_URL')) && env('RECONCILIATION_GITHUB_URL') !== '#'
         ? env('RECONCILIATION_GITHUB_URL')
-        : '#',
+        : 'https://github.com/zakgoldwasser/give-directly-demo',
 ];
