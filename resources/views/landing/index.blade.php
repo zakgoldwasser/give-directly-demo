@@ -16,19 +16,23 @@
             <form method="POST" action="{{ route('try.start') }}">
                 @csrf
                 <input type="hidden" name="intent" value="guided">
+                <input type="hidden" name="scenario_id" value="monthly_v1">
                 <button class="w-full rounded-lg bg-emerald-700 px-5 py-3 font-medium text-white hover:bg-emerald-800 sm:w-auto">
                     Start guided demo
                 </button>
             </form>
-            <form method="POST" action="{{ route('try.start') }}">
-                @csrf
-                <input type="hidden" name="intent" value="scenarios">
-                <button class="w-full rounded-lg border border-stone-300 bg-white px-5 py-3 font-medium text-stone-800 hover:bg-stone-50 sm:w-auto">
-                    Explore scenarios
-                </button>
-            </form>
+            <a href="#sample-scenarios" class="rounded-lg border border-stone-300 bg-white px-5 py-3 text-center font-medium text-stone-800 hover:bg-stone-50">Explore scenarios</a>
         </div>
     </div>
+
+    <section id="sample-scenarios" class="mt-12 scroll-mt-6" aria-labelledby="sample-scenarios-heading">
+        <h2 id="sample-scenarios-heading" class="text-2xl font-semibold text-stone-900">Choose a sample dataset</h2>
+        <p class="mt-2 mb-6 text-stone-600">Click a card to load all three CSVs and see the results. No downloads or uploads needed.</p>
+        @if ($errors->any())
+            <p class="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-900" role="alert">{{ $errors->first() }}</p>
+        @endif
+        @include('public.scenario-cards', ['sampleScenarios' => $sampleScenarios, 'selectedScenarioId' => null])
+    </section>
 
     <div id="how-it-works" class="mt-16 grid gap-6 md:grid-cols-3">
         <article class="rounded-xl border border-stone-200 bg-white p-6">

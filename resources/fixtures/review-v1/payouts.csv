@@ -1,0 +1,8 @@
+component_id,payout_id,component_type,amount_signed,currency,transaction_id,reported_net_amount,expected_item_count,payout_status,payout_date,source_updated_at
+R001,P-REVIEW,gift_credit,100.00,GBP,D001,625.00,7,sent,2026-09-30,2026-09-30T18:00:00+01:00
+R002,P-REVIEW,gift_credit,250.00,GBP,D002,625.00,7,sent,2026-09-30,2026-09-30T18:00:00+01:00
+R003,P-REVIEW,gift_credit,40.00,GBP,D005,625.00,7,sent,2026-09-30,2026-09-30T18:00:00+01:00
+R004,P-REVIEW,gift_credit,120.00,GBP,D006,625.00,7,sent,2026-09-30,2026-09-30T18:00:00+01:00
+R005,P-REVIEW,gift_credit,90.00,GBP,D007,625.00,7,sent,2026-09-30,2026-09-30T18:00:00+01:00
+R006,P-REVIEW,gift_credit,35.00,GBP,D009,625.00,7,sent,2026-09-30,2026-09-30T18:00:00+01:00
+R007,P-REVIEW,fee,-10.00,GBP,,625.00,7,sent,2026-09-30,2026-09-30T18:00:00+01:00

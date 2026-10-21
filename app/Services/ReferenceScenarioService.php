@@ -19,7 +19,7 @@ class ReferenceScenarioService
     /**
      * @return Collection<int, ImportBatch>
      */
-    public function load(GuestWorkspace $workspace): Collection
+    public function load(GuestWorkspace $workspace, string $scenarioId = 'reference_v1'): Collection
     {
         $created = collect();
 
@@ -27,7 +27,7 @@ class ReferenceScenarioService
 
         try {
             foreach (['donations', 'payouts', 'crm'] as $reportType) {
-                $batch = $this->imports->createFromFixture($workspace, $reportType);
+                $batch = $this->imports->createFromFixture($workspace, $reportType, $scenarioId);
                 $created->push($batch);
             }
 

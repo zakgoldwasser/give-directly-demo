@@ -40,8 +40,9 @@ class ConfirmationService
             abort(404);
         }
 
-        $snapshot = $this->fixtures->confirmationSnapshot();
-        $parsed = $this->csv->parse($this->fixtures->confirmationSnapshotPath());
+        $fixtures = $this->fixtures->forWorkspace($workspace);
+        $snapshot = $fixtures->confirmationSnapshot();
+        $parsed = $this->csv->parse($fixtures->confirmationSnapshotPath());
         $this->deadline->checkpoint();
         $this->validateSnapshot($parsed, $snapshot);
         $records = array_map($this->normalizeRecord(...), $parsed['rows']);

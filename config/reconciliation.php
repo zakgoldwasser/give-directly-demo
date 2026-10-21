@@ -43,6 +43,37 @@ return [
 
     'reference_fixture_manifest' => resource_path('fixtures/reference-v1/manifest.json'),
 
+    'sample_scenarios' => [
+        'monthly_v1' => [
+            'title' => 'Update this month’s donations',
+            'badge' => 'Start here',
+            'contains' => 'New donations, existing donations that already match, and one incorrect CRM amount. Payouts balance.',
+            'demonstrates' => 'Identify what to add, correct, and leave unchanged, then download approved changes.',
+            'manifest' => resource_path('fixtures/monthly-v1/manifest.json'),
+        ],
+        'review_v1' => [
+            'title' => 'Resolve records that need review',
+            'badge' => 'Review decisions',
+            'contains' => 'A repeated donation row, duplicate CRM records, a possible match missing its transaction ID, and an unfamiliar campaign code. Payouts balance.',
+            'demonstrates' => 'Distinguish repeated rows from conflicting records, confirm supported matches, and keep unresolved donations excluded.',
+            'manifest' => resource_path('fixtures/review-v1/manifest.json'),
+        ],
+        'payouts_v1' => [
+            'title' => 'Explain a payout difference',
+            'badge' => 'Payout checks',
+            'contains' => 'Donations with fees and refunds, one payout that balances after deductions, and another with an unexplained difference. CRM identities are straightforward.',
+            'demonstrates' => 'Explain the difference between gross donations and payouts, and distinguish expected deductions from a discrepancy needing investigation.',
+            'manifest' => resource_path('fixtures/payouts-v1/manifest.json'),
+        ],
+        'reference_v1' => [
+            'title' => 'Full reconciliation example',
+            'badge' => 'Advanced',
+            'contains' => 'The full sample combines matching, duplicates, campaign review, refunds, and payout exceptions.',
+            'demonstrates' => 'Work through a realistic combination of cases after learning the individual steps.',
+            'manifest' => resource_path('fixtures/reference-v1/manifest.json'),
+        ],
+    ],
+
     'rule_version' => 'demo_v1',
 
     'campaign_mappings' => [

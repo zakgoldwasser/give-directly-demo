@@ -60,24 +60,27 @@ class ImportService
      * @throws DuplicateImportException
      * @throws ImportLimitException
      */
-    public function createFromFixture(GuestWorkspace $workspace, string $reportType): ImportBatch
+    public function createFromFixture(GuestWorkspace $workspace, string $reportType, string $scenarioId = 'reference_v1'): ImportBatch
     {
-        $report = $this->fixtures->report($reportType);
+        $fixtures = $this->fixtures->forScenario($scenarioId);
+        $report = $fixtures->report($reportType);
 
         return $this->createFromPath(
             $workspace,
-            $this->fixtures->path($reportType),
+            $fixtures->path($reportType),
             $reportType,
             (string) $report['filename'],
             false,
+            $fixtures->contextFor($reportType, $report['sha256']),
         );
     }
 
     public function createFromConfirmationSnapshot(GuestWorkspace $workspace, ConfirmationBatch $confirmation): ImportBatch
     {
-        $scenario = $this->fixtures->scenario();
-        $snapshot = $this->fixtures->confirmationSnapshot();
-        $crmContext = $this->fixtures->report('crm')['context'];
+        $fixtures = $this->fixtures->forWorkspace($workspace);
+        $scenario = $fixtures->scenario();
+        $snapshot = $fixtures->confirmationSnapshot();
+        $crmContext = $fixtures->report('crm')['context'];
         $context = [
             'scenario_id' => $scenario['scenario_id'],
             'organization_id' => $scenario['organization_id'],
@@ -94,7 +97,7 @@ class ImportService
 
         return $this->createFromPath(
             workspace: $workspace,
-            sourcePath: $this->fixtures->confirmationSnapshotPath(),
+            sourcePath: $fixtures->confirmationSnapshotPath(),
             reportType: 'crm',
             originalName: (string) $snapshot['filename'],
             enforceUploadPolicy: false,
@@ -220,7 +223,7 @@ class ImportService
             return;
         }
 
-        if ($this->fixtures->isApproved($reportType, $checksum)) {
+        if ($this->fixtures->contextForUpload($reportType, $checksum) !== null) {
             return;
         }
 
@@ -315,7 +318,7 @@ class ImportService
             'private_file_path' => $relativePath,
             'sha256_checksum' => $checksum,
             'parsing_config' => null,
-            'context' => $context ?? $this->fixtures->contextFor($reportType, $checksum),
+            'context' => $context ?? $this->fixtures->contextForUpload($reportType, $checksum),
             'status' => ImportBatch::STATUS_UPLOADED,
             'total_rows' => 0,
             'processed_rows' => 0,

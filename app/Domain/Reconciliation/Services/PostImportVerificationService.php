@@ -46,7 +46,7 @@ class PostImportVerificationService
                     return $locked->verificationRun()->firstOrFail();
                 }
 
-                $snapshot = $this->fixtures->confirmationSnapshot();
+                $snapshot = $this->fixtures->forWorkspace($workspace)->confirmationSnapshot();
 
                 if (! hash_equals((string) $snapshot['sha256'], $locked->snapshot_checksum)) {
                     throw ValidationException::withMessages([

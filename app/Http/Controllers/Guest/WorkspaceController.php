@@ -9,12 +9,14 @@ use App\Domain\Reconciliation\Services\ReviewDecisionService;
 use App\Http\Controllers\Controller;
 use App\Models\CanonicalRecord;
 use App\Models\GuestWorkspace;
+use App\Models\ImportBatch;
 use App\Models\WorkspaceOperation;
 use App\Services\Operations\WorkspaceOperationService;
 use App\Services\ReferenceScenarioService;
 use App\Services\WorkspaceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class WorkspaceController extends Controller
@@ -32,12 +34,13 @@ class WorkspaceController extends Controller
     {
         $validated = $request->validate([
             'intent' => ['required', 'in:guided,scenarios'],
+            'scenario_id' => ['sometimes', 'required', 'string', Rule::in(array_keys($this->fixtures->choices()))],
         ]);
 
         $workspace = $this->workspaces->start($validated['intent']);
 
-        if ($validated['intent'] === 'guided') {
-            $this->referenceScenario->load($workspace);
+        if ($validated['intent'] === 'guided' || isset($validated['scenario_id'])) {
+            $this->referenceScenario->load($workspace, $validated['scenario_id'] ?? 'reference_v1');
         }
 
         return redirect()->route('try.show');
@@ -70,7 +73,13 @@ class WorkspaceController extends Controller
             ->with(['results' => fn ($query) => $query->orderBy('transaction_id')])
             ->orderByDesc('completed_at')
             ->first();
-        $expectedConfirmationCounts = $this->fixtures->confirmationSnapshot()['expected'];
+        $fixtures = $this->fixtures->forWorkspace($workspace);
+        $scenarioId = $imports->get('donations')?->context['scenario_id'] ?? null;
+        $sampleLoaded = $imports->count() === 3 && $imports->every(
+            fn (ImportBatch $batch): bool => $batch->status === ImportBatch::STATUS_VALIDATED
+                && ($batch->context['scenario_id'] ?? null) === $scenarioId,
+        );
+        $expectedConfirmationCounts = $fixtures->confirmationSnapshot()['expected'];
         $verificationEligible = $confirmationBatch !== null
             && collect($expectedConfirmationCounts)->every(
                 fn (int $count, string $outcome): bool => ($confirmationBatch->counts[$outcome] ?? null) === $count,
@@ -97,7 +106,10 @@ class WorkspaceController extends Controller
             'verificationEligible' => $verificationEligible,
             'exportProfileVersion' => ExportService::PROFILE_VERSION,
             'crmSnapshotGeneratedAt' => $imports->get('crm')?->context['generated_at'] ?? null,
-            'fixtureReports' => $this->fixtures->reports(),
+            'fixtureReports' => $fixtures->reports(),
+            'sampleScenarios' => $this->fixtures->choices(),
+            'selectedScenarioId' => $scenarioId,
+            'selectedScenario' => $sampleLoaded ? ($this->fixtures->choices()[$scenarioId] ?? null) : null,
             'maxCsvSizeMb' => round(((int) config('reconciliation.max_csv_size_bytes')) / 1024 / 1024, 1),
             'maxDataRows' => (int) config('reconciliation.max_data_rows'),
             'maxColumns' => (int) config('reconciliation.max_columns'),
@@ -111,10 +123,13 @@ class WorkspaceController extends Controller
 
     public function reset(): RedirectResponse
     {
+        $current = $this->workspaces->resolve();
+        $scenarioId = $current?->importBatches()->where('report_type', 'donations')->oldest()->first()?->context['scenario_id'] ?? null;
+        $scenarioId = isset($this->fixtures->choices()[$scenarioId]) ? $scenarioId : null;
         $workspace = $this->workspaces->reset();
 
-        if ($this->workspaces->intent() === 'guided') {
-            $this->referenceScenario->load($workspace);
+        if ($this->workspaces->intent() === 'guided' || $scenarioId !== null) {
+            $this->referenceScenario->load($workspace, $scenarioId ?? 'reference_v1');
         }
 
         return redirect()->route('try.show');

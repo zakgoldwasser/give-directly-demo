@@ -1,0 +1,8 @@
+transaction_id,gifted_at,gross_amount,currency,status,refunded_amount,campaign_code,donor_ref,donor_email,source_updated_at
+D001,2026-09-02T10:15:00+01:00,100.00,GBP,paid,0.00,GENERAL,DONOR-001,alex.morgan@example.test,2026-09-02T10:16:00+01:00
+D001,2026-09-02T10:15:00+01:00,100.00,GBP,paid,0.00,GENERAL,DONOR-001,alex.morgan@example.test,2026-09-02T10:16:00+01:00
+D002,2026-09-04T14:30:00+01:00,250.00,GBP,paid,0.00,EMERGENCY,,,2026-09-04T14:31:00+01:00
+D005,2026-09-10T11:20:00+01:00,40.00,GBP,paid,0.00,GENERAL,DONOR-005,emery.ross@example.test,2026-09-10T11:21:00+01:00
+D006,2026-09-12T13:10:00+01:00,120.00,GBP,paid,0.00,NEW-PROGRAM,DONOR-006,frankie.khan@example.test,2026-09-12T13:11:00+01:00
+D007,2026-09-14T08:55:00+01:00,90.00,GBP,paid,0.00,GENERAL,DONOR-007,gale.chen@example.test,2026-09-14T08:56:00+01:00
+D009,2026-09-18T10:00:00+01:00,35.00,GBP,paid,0.00,GENERAL,DONOR-009,indigo.brown@example.test,2026-09-18T10:01:00+01:00

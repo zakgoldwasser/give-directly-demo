@@ -2,11 +2,51 @@
 
 namespace App\Domain\Reconciliation\Services;
 
+use App\Models\GuestWorkspace;
 use JsonException;
 use RuntimeException;
 
 class ReferenceFixtureCatalog
 {
+    public function __construct(private readonly string $scenarioId = 'reference_v1') {}
+
+    /** @return array<string, array<string, string>> */
+    public function choices(): array
+    {
+        return config('reconciliation.sample_scenarios', []);
+    }
+
+    public function forScenario(string $scenarioId): self
+    {
+        if (! array_key_exists($scenarioId, $this->choices())) {
+            throw new RuntimeException('Unknown sample scenario.');
+        }
+
+        return new self($scenarioId);
+    }
+
+    public function forWorkspace(GuestWorkspace $workspace): self
+    {
+        $batch = $workspace->importBatches()->where('report_type', 'donations')->oldest()->first();
+        $scenarioId = $batch?->context['scenario_id'] ?? 'reference_v1';
+
+        return $this->forScenario(array_key_exists($scenarioId, $this->choices()) ? $scenarioId : 'reference_v1');
+    }
+
+    /** @return array<string, mixed>|null */
+    public function contextForUpload(string $reportType, string $checksum): ?array
+    {
+        foreach (array_keys($this->choices()) as $scenarioId) {
+            $context = $this->forScenario($scenarioId)->contextFor($reportType, $checksum);
+
+            if ($context !== null) {
+                return $context;
+            }
+        }
+
+        return null;
+    }
+
     /**
      * @var array<string, mixed>|null
      */
@@ -143,7 +183,9 @@ class ReferenceFixtureCatalog
 
     private function manifestPath(): string
     {
-        $path = config('reconciliation.reference_fixture_manifest');
+        $path = $this->scenarioId === 'reference_v1'
+            ? config('reconciliation.reference_fixture_manifest')
+            : ($this->choices()[$this->scenarioId]['manifest'] ?? null);
 
         if (! is_string($path) || ! is_file($path)) {
             throw new RuntimeException('The reference fixture manifest is missing.');

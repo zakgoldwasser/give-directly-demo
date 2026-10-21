@@ -33,6 +33,19 @@ docker compose exec laravel.test npm run build
 
 Open [http://localhost](http://localhost).
 
+## Sample datasets
+
+The landing page and workspace offer four clickable sample cards. Each explains what its CSVs contain and what it demonstrates. Selecting a card loads the donation, payout, and CRM reports into a fresh workspace and runs reconciliation without downloading or uploading files. The guided-demo button starts with the monthly example; reset reloads the selected sample. Optional report downloads remain available.
+
+| Sample | CSV contents | Demonstrates |
+| --- | --- | --- |
+| Update this month's donations | Six donations, balanced payouts, and a CRM snapshot with missing gifts and one incorrect amount | Two creates, one correction, and three unchanged donations |
+| Resolve records that need review | Six donations plus a repeated row, balanced payouts, duplicate CRM targets, a possible match without identifiers, and an unmapped campaign | Source-row deduplication, evidence-backed review decisions, and exclusion of unresolved CRM duplicates |
+| Explain a payout difference | Six donations, fees and refunds, one balanced payout, and one payout with a GBP 3 difference | Expected deductions versus an unexplained discrepancy; affected gifts stay held |
+| Full reconciliation example | The original reference set combining matching, review, refunds, pending payouts, and exceptions | The complete review, export, and simulated confirmation workflow |
+
+Each set has its own checksum-verified manifest and fixed post-import CRM snapshot under `resources/fixtures`. Confirmation and verification use the selected set's snapshot. The full reference set and its original API default remain available for existing integrations.
+
 Run the tests with:
 
 ```powershell

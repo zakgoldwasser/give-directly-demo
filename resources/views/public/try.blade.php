@@ -8,7 +8,7 @@
         <div>
             <p class="text-sm font-medium uppercase tracking-wide text-emerald-700">Independent demo · Synthetic data</p>
             <h1 class="mt-2 text-3xl font-semibold tracking-tight text-stone-900">Reconciliation workspace</h1>
-            <p class="mt-3 max-w-2xl text-stone-600">Load the donation, payout, and CRM reports that make up one frozen reconciliation run.</p>
+            <p class="mt-3 max-w-2xl text-stone-600">{{ $selectedScenario ? 'Your sample donation, payout, and CRM reports are loaded. Review the results below.' : 'Choose a sample to load all three reports automatically, or upload reports below.' }}</p>
         </div>
         <div class="flex flex-wrap gap-3">
             @if ($reconciliationRun)
@@ -21,10 +21,27 @@
         </div>
     </div>
 
+    @if ($selectedScenario)
+        <section class="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-5" aria-labelledby="selected-scenario-heading">
+            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Sample loaded · {{ $selectedScenario['badge'] }}</p>
+            <h2 id="selected-scenario-heading" class="mt-1 text-xl font-semibold text-stone-900">{{ $selectedScenario['title'] }}</h2>
+            <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+                <div><dt class="font-semibold text-stone-800">What the CSVs contain</dt><dd class="mt-1 text-stone-600">{{ $selectedScenario['contains'] }}</dd></div>
+                <div><dt class="font-semibold text-stone-800">What it demonstrates</dt><dd class="mt-1 text-stone-600">{{ $selectedScenario['demonstrates'] }}</dd></div>
+            </dl>
+        </section>
+    @endif
+
+    <details class="mt-6 rounded-xl border border-stone-200 bg-stone-50 p-5" @if (! $selectedScenario) open @endif>
+        <summary class="cursor-pointer font-semibold text-emerald-800">{{ $selectedScenario ? 'Try another sample dataset' : 'Choose a sample dataset' }}</summary>
+        <p class="mt-3 mb-5 text-sm text-stone-600">Selecting a sample starts a fresh workspace with all three reports loaded. Review decisions are separate for each workspace.</p>
+        @include('public.scenario-cards', ['sampleScenarios' => $sampleScenarios, 'selectedScenarioId' => $selectedScenario ? $selectedScenarioId : null])
+    </details>
+
     <dl class="mt-8 grid gap-4 rounded-xl border border-stone-200 bg-white p-5 text-sm sm:grid-cols-3">
         <div>
             <dt class="text-stone-500">Scenario</dt>
-            <dd class="font-medium text-stone-900">{{ $intent === 'guided' ? 'Guided reference scenario' : 'Scenario explorer' }}</dd>
+            <dd class="font-medium text-stone-900">{{ $selectedScenario['title'] ?? 'Scenario explorer' }}</dd>
         </div>
         <div>
             <dt class="text-stone-500">Time remaining</dt>
@@ -413,7 +430,7 @@
                 <h2 class="text-lg font-semibold text-stone-900">{{ $label }}</h2>
                 <p class="mt-2 text-sm text-stone-600">{{ $description }}</p>
 
-                <a class="mt-4 inline-flex text-sm font-medium text-emerald-700 hover:text-emerald-800" href="{{ route('reference-fixtures.download', $type) }}">
+                <a class="mt-4 inline-flex text-sm font-medium text-emerald-700 hover:text-emerald-800" href="{{ route('reference-fixtures.download', ['reportType' => $type, 'scenario_id' => $selectedScenarioId ?? 'reference_v1']) }}">
                     Download sample · {{ number_format($fixture['expected_rows']) }} rows
                 </a>
 
@@ -428,7 +445,12 @@
                             <p class="mt-1 text-xs">{{ number_format($batch->valid_rows) }} valid · {{ number_format($batch->rejected_rows) }} rejected</p>
                         @endif
                         @if ($batch->materialized_at)
-                            <p class="mt-1 text-xs">{{ number_format($batch->materialized_rows) }} source rows materialized@if ($batch->duplicate_rows > 0) · {{ number_format($batch->duplicate_rows) }} duplicate occurrence@endif</p>
+                            <p class="mt-1 text-xs">
+                                {{ number_format($batch->materialized_rows) }} source rows materialized
+                                @if ($batch->duplicate_rows > 0)
+                                    · {{ number_format($batch->duplicate_rows) }} duplicate occurrence
+                                @endif
+                            </p>
                         @endif
                         <a class="mt-3 inline-flex text-sm font-medium underline" href="{{ route('try.imports.show', $batch) }}">Review loaded rows</a>
                     </div>

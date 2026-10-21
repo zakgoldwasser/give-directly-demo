@@ -1,0 +1,5 @@
+crm_record_id,external_gift_key,provider_transaction_id,gross_amount,refunded_amount,currency,gifted_at,gift_status,campaign_id,donor_ref,donor_email
+CRM001,xgk_641ebf5e878ac380ff6a0cd02270922b91e3cd6bc830fde89b5e759e1157d740,D001,100.00,0.00,GBP,2026-09-02T10:15:00+01:00,paid,CAMPAIGN-GENERAL,DONOR-001,alex.morgan@example.test
+CRM002,xgk_cc8ab1120e3e4e47ff3045a67de1b2ccf1d89a8026aed8a27a6685a31240f669,D003,70.00,0.00,GBP,2026-09-06T09:05:00+01:00,paid,CAMPAIGN-GENERAL,DONOR-003,casey.lee@example.test
+CRM007,xgk_0d96e1e1a9d29dcb75f4afae32505d018fc2ae65b790a473be22a478af418b0b,D009,35.00,0.00,GBP,2026-09-18T10:00:00+01:00,paid,CAMPAIGN-GENERAL,DONOR-009,indigo.brown@example.test
+CRM011,xgk_10498d995287afbf265313feb194141316f3dc5efb7efcd570f3a4d2858a001b,D011,55.00,0.00,GBP,2026-09-22T12:35:00+01:00,paid,CAMPAIGN-GENERAL,DONOR-011,kai.wilson@example.test

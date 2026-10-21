@@ -1,0 +1,112 @@
+{
+  "scenario_id": "payouts_v1",
+  "manifest_version": 1,
+  "profile_version": "demo_caf_v1",
+  "organization_id": "demo_org",
+  "provider_id": "demo_caf",
+  "account_id": "demo_account",
+  "currency": "GBP",
+  "reports": {
+    "donations": {
+      "filename": "donations.csv",
+      "sha256": "c67260edfb8d87e83c640d51cd0435083132d9b898c919979eb327c61887a9cf",
+      "expected_rows": 6,
+      "context": {
+        "report_type": "donations",
+        "generated_at": "2026-10-01T09:00:00+01:00",
+        "coverage_start": "2026-09-01T00:00:00+01:00",
+        "coverage_end": "2026-09-30T23:59:59+01:00",
+        "timezone": "Europe/London",
+        "coverage_filters": {
+          "statuses": [
+            "paid",
+            "pending",
+            "partially_refunded",
+            "refunded"
+          ]
+        },
+        "complete_snapshot": true,
+        "profile_version": "demo_caf_v1",
+        "schema_version": 1
+      }
+    },
+    "payouts": {
+      "filename": "payouts.csv",
+      "sha256": "fe4b415779ca85e826380a4b2ecd8741eefdfbc7c10d4b40675ba5afea0723dc",
+      "expected_rows": 10,
+      "context": {
+        "report_type": "payouts",
+        "generated_at": "2026-10-01T10:00:00+01:00",
+        "coverage_start": "2026-09-01T00:00:00+01:00",
+        "coverage_end": "2026-09-30T23:59:59+01:00",
+        "timezone": "Europe/London",
+        "coverage_filters": {
+          "payout_statuses": [
+            "sent",
+            "pending"
+          ]
+        },
+        "complete_snapshot": true,
+        "profile_version": "demo_caf_v1",
+        "schema_version": 1
+      }
+    },
+    "crm": {
+      "filename": "crm.csv",
+      "sha256": "de4f90aad1a99256ba397a24e4a985fcdc3b4c0bfa5c1d41b964f3d14b891dc9",
+      "expected_rows": 6,
+      "context": {
+        "report_type": "crm",
+        "generated_at": "2026-10-02T12:00:00+01:00",
+        "coverage_start": "2026-09-01T00:00:00+01:00",
+        "coverage_end": "2026-09-30T23:59:59+01:00",
+        "timezone": "Europe/London",
+        "coverage_filters": {
+          "gift_statuses": [
+            "paid"
+          ]
+        },
+        "complete_snapshot": true,
+        "profile_version": "demo_caf_v1",
+        "schema_version": 1
+      }
+    }
+  },
+  "confirmation_snapshot": {
+    "filename": "crm-post-import.csv",
+    "sha256": "653b4073b3d41de6f3a042d9cf40ede92d3d79b9949caa8ae6cc897b6e225a9a",
+    "expected_rows": 6,
+    "complete_snapshot": true,
+    "simulated": true,
+    "expected": {
+      "matches_snapshot": 2,
+      "mismatches_snapshot": 0,
+      "duplicate_key": 0,
+      "cannot_verify_coverage": 0
+    },
+    "verification_outcomes": {
+      "create": 0,
+      "update": 0,
+      "unchanged": 5,
+      "held": 1
+    }
+  },
+  "expected": {
+    "donation_rows": 6,
+    "logical_gifts": 6,
+    "payout_components": 10,
+    "crm_records": 6,
+    "initial_outcomes": {
+      "update": 2,
+      "create": 0,
+      "unchanged": 3,
+      "held": 1
+    },
+    "outcomes": {
+      "update": 2,
+      "create": 0,
+      "unchanged": 3,
+      "held": 1
+    }
+  }
+}
