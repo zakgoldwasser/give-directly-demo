@@ -43,6 +43,7 @@
                 <article id="report-{{ $type }}" data-report-card="{{ $type }}" class="rounded-xl border border-stone-200 bg-white p-5">
                     <h3 class="font-semibold text-stone-900">{{ $title }}</h3>
                     <p class="mt-2 text-sm text-stone-600">{{ $description }}</p>
+                    @include('public.required-columns')
                     @php($batch = $imports->get($type))
                     <div data-report-state>
                         @if ($batch)
@@ -57,6 +58,7 @@
                 </article>
             @endforeach
         </div>
+        <p class="mt-4 text-sm text-stone-600">Your CSV column headings can be different. After uploading, use the mapping popup to match your columns to the required fields.</p>
     </section>
 
     <div class="mt-12 rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-950">

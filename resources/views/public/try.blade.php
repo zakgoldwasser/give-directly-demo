@@ -424,6 +424,7 @@
             <article id="report-{{ $type }}" data-report-card="{{ $type }}" class="rounded-xl border border-stone-200 bg-white p-6">
                 <h2 class="text-lg font-semibold text-stone-900">{{ $label }}</h2>
                 <p class="mt-2 text-sm text-stone-600">{{ $description }}</p>
+                @include('public.required-columns')
 
                 <a data-download-feedback class="mt-4 inline-flex text-sm font-medium text-emerald-700 hover:text-emerald-800" href="{{ route('reference-fixtures.download', ['reportType' => $type, 'scenario_id' => $selectedScenarioId ?? 'reference_v1']) }}">
                     Download sample · {{ number_format($fixture['expected_rows']) }} rows
@@ -442,5 +443,6 @@
             </article>
         @endforeach
     </div>
+    <p class="mt-4 text-sm text-stone-600">Your CSV column headings can be different. After uploading, use the mapping popup to match your columns to the required fields.</p>
 </section>
 @endsection
